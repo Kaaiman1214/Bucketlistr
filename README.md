@@ -8,8 +8,8 @@ A self-hosted open source Bucketlist solution
    touch /path/to/host/bucketlist.db
    ```
 2. **Run the container:** Replace `/path/to/host/data` and `/path/to/host/config`:
-   ```bash
-  docker run -d \
+ ```bash
+docker run -d \
     --name Bucketlistr \
     --restart unless-stopped \
     -v /path/to/host/bucketlist.db:/app/bucketlist.db \
@@ -17,5 +17,21 @@ A self-hosted open source Bucketlist solution
     -p 8000:8000 \
     -e TZ=Europe/Amsterdam \
      kds1215/bucketlistr
-   ```
+ ```
+### Using Docker compose
+Use this template to set up Bucketlistr with Docker compose
+```yaml
+services:
+  bucketlistr:
+    image: kds1215/bucketlistr
+    container_name: bucketlistr
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+    volumes:
+      - /path/to/host/bucketlist.db:/app/bucketlist.db
+      - /path/to/host/uploads:/app/static/uploads
+    environment:
+      - TZ=Europe/Amsterdam
+```
 
