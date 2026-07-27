@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <title>First Run Setup</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+</head>
+<body class="bg-dark d-flex align-items-center justify-content-center" style="height: 100vh;">
+
+<div class="card p-4 shadow-lg border-0" style="width: 100%; max-width: 500px;">
+    <div class="text-center mb-4">
+        <h2 class="fw-bold">Welcome</h2>
+        <p class="text-muted">Set up your Bucketlist and create a admin login</p>
+    </div>
+    
+    <form method="POST" action="/setup" enctype="multipart/form-data">
+        <h5 class="border-bottom pb-2 mb-3">1. Site Settings</h5>
+        <div class="mb-3">
+            <label class="form-label fw-semibold">Site/Bucketlist name</label>
+            <input type="text" name="site_name" class="form-control" placeholder="Tim's 10.000 things to do before death" required>
+        </div>
+        <div class="mb-3">
+            <label class="form-label fw-semibold">Public Quote (Optional)</label>
+            <input type="text" name="site_quote" class="form-control" placeholder="Diary's of a world traveler">
+        </div>
+        <div class="mb-4">
+            <label class="form-label fw-semibold">Site Icon(optional)</label>
+            <input type="file" name="favicon" class="form-control" accept="image/*">
+            <div class="form-text">This image will appear in the browser tab.</div>
+        </div>
+
+        <h5 class="border-bottom pb-2 mb-3">2. Admin Account</h5>
+        <div class="mb-3">
+            <label class="form-label fw-semibold">Admin Username</label>
+            <input type="text" name="username" class="form-control" placeholder="Admin" required>
+        </div>
+        <div class="mb-4">
+            <label class="form-label fw-semibold">Secure Password</label>
+            <input type="password" name="password" class="form-control" required>
+        </div>
+        
+        <button type="submit" class="btn btn-success w-100 py-2 fw-bold">Boot System</button>
+    </form>
+</div>
+
+</body>
+</html>
