@@ -18,3 +18,4 @@ A self-hosted open source Bucketlist solution
     -e TZ=Europe/Amsterdam \
      kds1215/bucketlistr
    ```
+
