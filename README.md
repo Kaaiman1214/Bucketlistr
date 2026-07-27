@@ -2,7 +2,12 @@
 A self-hosted open source Bucketlist solution
 
 ### Using Docker
-**Run the container:** Replace `/path/to/host/data` and `/path/to/host/config`:
+1. **Create the database:**
+   Docker doesn't always create the database properly, so just to make sure, create the file manualy.
+   ```bash
+   touch /path/to/host/bucketlist.db
+   ```
+3. **Run the container:** Replace `/path/to/host/data` and `/path/to/host/config`:
    ```bash
   docker run -d \
     --name Bucketlistr \
