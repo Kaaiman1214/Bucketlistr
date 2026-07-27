@@ -7,7 +7,7 @@ A self-hosted open source Bucketlist solution
    ```bash
    touch /path/to/host/bucketlist.db
    ```
-3. **Run the container:** Replace `/path/to/host/data` and `/path/to/host/config`:
+2. **Run the container:** Replace `/path/to/host/data` and `/path/to/host/config`:
    ```bash
   docker run -d \
     --name Bucketlistr \
