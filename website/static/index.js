@@ -1,8 +1,13 @@
-function deleteItem(itemId) {
-    fetch("/delete-item", {
-        method: 'POST',
-        body: JSON.stringify({ itemId: itemId })
-    }).then((_res) => {
-        window.location.href = "/";
-    });
-}
+// Edit page: only show the completion date fields while "Completed" is ticked.
+document.addEventListener('DOMContentLoaded', function () {
+    var checkbox = document.getElementById('completed');
+    var fields = document.getElementById('completed-fields');
+    if (!checkbox || !fields) return;
+
+    function toggle() {
+        fields.style.display = checkbox.checked ? '' : 'none';
+    }
+
+    checkbox.addEventListener('change', toggle);
+    toggle();
+});

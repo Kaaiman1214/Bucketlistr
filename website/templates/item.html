@@ -5,6 +5,12 @@
 
 <h1>{{ item.title }}</h1>
 
+{% if item.completed %}
+  <p class="text-success"><i class="fa fa-check"></i> {{ item.completed_label }}</p>
+{% else %}
+  <p class="text-muted">Not completed yet</p>
+{% endif %}
+
 <div class="my-4">
   {% if item.description %}
     <p class="description">{{ item.description }}</p>

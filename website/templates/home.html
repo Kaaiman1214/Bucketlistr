@@ -1,13 +1,16 @@
 {% extends "base.html" %}
 {% block title %}Bucketlist{% endblock %}
 
-{% macro tile(item) %}
+{% macro tile(item, done=False) %}
 <div class="col-sm-6 col-lg-4 mb-4">
-  <div class="card tile h-100">
+  <div class="card tile h-100 {{ 'tile-done' if done }}">
     <div class="card-body">
       <h5 class="card-title">
         <a href="{{ url_for('views.item', item_id=item.id) }}" class="stretched-link text-dark">{{ item.title }}</a>
       </h5>
+      {% if done %}
+        <p class="card-text text-success mb-0"><i class="fa fa-check"></i> {{ item.completed_label }}</p>
+      {% endif %}
     </div>
   </div>
 </div>
@@ -22,11 +25,21 @@
   <button type="submit" class="btn btn-primary mb-2">Add item</button>
 </form>
 
-{% if not items %}
+{% if not todo_items and not done_items %}
   <p class="text-center text-muted">Nothing on the list yet. Add your first item above.</p>
-{% else %}
+{% endif %}
+
+{% if todo_items %}
+<h4 class="mb-3">To do</h4>
 <div class="row">
-  {% for item in items %}{{ tile(item) }}{% endfor %}
+  {% for item in todo_items %}{{ tile(item) }}{% endfor %}
+</div>
+{% endif %}
+
+{% if done_items %}
+<h4 class="mb-3 mt-3">Completed</h4>
+<div class="row">
+  {% for item in done_items %}{{ tile(item, done=True) }}{% endfor %}
 </div>
 {% endif %}
 {% endblock %}

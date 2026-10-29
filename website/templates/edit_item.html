@@ -16,6 +16,31 @@
     <textarea class="form-control" id="description" name="description" rows="6">{{ values.description }}</textarea>
   </div>
 
+  <div class="form-group">
+    <div class="custom-control custom-checkbox">
+      <input type="checkbox" class="custom-control-input" id="completed" name="completed"
+             {% if values.completed %}checked{% endif %} />
+      <label class="custom-control-label" for="completed">Completed</label>
+    </div>
+  </div>
+
+  <div id="completed-fields" class="form-row">
+    <div class="form-group col-sm-4">
+      <label for="completed_month">Month <span class="text-muted">(optional)</span></label>
+      <select class="form-control" id="completed_month" name="completed_month">
+        <option value="">No month</option>
+        {% for name in months %}
+          <option value="{{ loop.index }}" {% if values.month|string == loop.index|string %}selected{% endif %}>{{ name }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="form-group col-sm-4">
+      <label for="completed_year">Year <span class="text-muted">(optional)</span></label>
+      <input type="number" class="form-control" id="completed_year" name="completed_year"
+             min="1900" max="2100" placeholder="e.g. 2026" value="{{ values.year }}" />
+    </div>
+  </div>
+
   <button type="submit" class="btn btn-primary">Save changes</button>
   <a href="{{ url_for('views.item', item_id=item.id) }}" class="btn btn-outline-secondary">Cancel</a>
 </form>
