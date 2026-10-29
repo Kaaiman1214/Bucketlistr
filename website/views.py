@@ -23,7 +23,6 @@ def get_owned_item(item_id):
 
 
 @views.route('/')
-@login_required
 def home():
     items = BucketItem.query.order_by(BucketItem.id).all()
     todo_items = [i for i in items if not i.completed]
@@ -49,7 +48,6 @@ def add_item():
 
 
 @views.route('/item/<int:item_id>')
-@login_required
 def item(item_id):
     item = BucketItem.query.get_or_404(item_id)
     return render_template("item.html", user=current_user, item=item)

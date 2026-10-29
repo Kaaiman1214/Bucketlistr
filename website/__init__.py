@@ -26,6 +26,8 @@ def create_app():
 
     login_manager = LoginManager()
     login_manager.login_view = 'auth.login'
+    login_manager.login_message = 'Please log in to edit the bucketlist.'
+    login_manager.login_message_category = 'error'
     login_manager.init_app(app)
 
     @login_manager.user_loader
@@ -35,7 +37,5 @@ def create_app():
     return app
 
 def create_database(app):
-    # create_all only creates tables that are missing, so it is safe to run
-    # on every start and will add the new bucket_item table to an old database.
     with app.app_context():
         db.create_all()

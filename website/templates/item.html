@@ -19,5 +19,7 @@
   {% endif %}
 </div>
 
-<a class="btn btn-primary" href="{{ url_for('views.edit_item', item_id=item.id) }}">Edit item</a>
+{% if user.is_authenticated %}
+  <a class="btn btn-primary" href="{{ url_for('views.edit_item', item_id=item.id) }}">Edit item</a>
+{% endif %}
 {% endblock %}
