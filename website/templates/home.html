@@ -1,21 +1,32 @@
-{% extends "base.html" %} {% block title %}Home{% endblock %}{% block 
-    content %}
-    <h1 align="center">Bucketlist</h1>
-    <ul class="list-group list-group-flush" id="blitem">
-        {% for blitem in user.bl_items %}
-        <li class="list-group-item">
-            {{ blitem.text }}
-            <button type="button" class="close" onclick="deleteItem({{ blitem.id }})">
-                <span aria-hidden="true">&times;</span>
-            </button>
-        </li>
-        {% endfor %}
-    </ul>
-    <form method="POST">
-        <textarea name="blitem" id="blitem-input" class="form-control"></textarea>
-        <br />
-        <div align="center">
-            <button type="submit" class="btn btn-primary">Add Item</button>
-        </div>
-    </form>
-    {% endblock %}
+{% extends "base.html" %}
+{% block title %}Bucketlist{% endblock %}
+
+{% macro tile(item) %}
+<div class="col-sm-6 col-lg-4 mb-4">
+  <div class="card tile h-100">
+    <div class="card-body">
+      <h5 class="card-title">
+        <a href="{{ url_for('views.item', item_id=item.id) }}" class="stretched-link text-dark">{{ item.title }}</a>
+      </h5>
+    </div>
+  </div>
+</div>
+{% endmacro %}
+
+{% block content %}
+<h1 class="text-center my-4">Bucketlist</h1>
+
+<form method="POST" action="{{ url_for('views.add_item') }}" class="form-inline justify-content-center mb-5">
+  <input type="text" name="title" class="form-control mr-2 mb-2" size="36" maxlength="200"
+         placeholder="Something you want to do" aria-label="New item title" required />
+  <button type="submit" class="btn btn-primary mb-2">Add item</button>
+</form>
+
+{% if not items %}
+  <p class="text-center text-muted">Nothing on the list yet. Add your first item above.</p>
+{% else %}
+<div class="row">
+  {% for item in items %}{{ tile(item) }}{% endfor %}
+</div>
+{% endif %}
+{% endblock %}

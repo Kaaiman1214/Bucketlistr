@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+{% block title %}Edit item{% endblock %}
+{% block content %}
+<p class="mt-4"><a href="{{ url_for('views.item', item_id=item.id) }}">&larr; Back to item</a></p>
+<h1 class="mb-4">Edit item</h1>
+
+<form method="POST">
+  <div class="form-group">
+    <label for="title">Title</label>
+    <input type="text" class="form-control" id="title" name="title" maxlength="200"
+           value="{{ values.title }}" required />
+  </div>
+
+  <div class="form-group">
+    <label for="description">Description <span class="text-muted">(optional)</span></label>
+    <textarea class="form-control" id="description" name="description" rows="6">{{ values.description }}</textarea>
+  </div>
+
+  <button type="submit" class="btn btn-primary">Save changes</button>
+  <a href="{{ url_for('views.item', item_id=item.id) }}" class="btn btn-outline-secondary">Cancel</a>
+</form>
+
+<hr class="my-4" />
+
+<form method="POST" action="{{ url_for('views.delete_item', item_id=item.id) }}"
+      onsubmit="return confirm('Delete this item? This cannot be undone.');">
+  <button type="submit" class="btn btn-outline-danger">Delete item</button>
+</form>
+{% endblock %}

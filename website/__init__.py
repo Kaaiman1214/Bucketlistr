@@ -20,7 +20,7 @@ def create_app():
     app.register_blueprint(views, url_prefix='/')
     app.register_blueprint(auth, url_prefix='/')
 
-    from .models import User, BLItem
+    from .models import User, BucketItem
 
     create_database(app)
 
@@ -35,7 +35,7 @@ def create_app():
     return app
 
 def create_database(app):
-    if not path.exists(DB_PATH):
-        with app.app_context():
-            db.create_all()
-        print('Created Database!')
+    # create_all only creates tables that are missing, so it is safe to run
+    # on every start and will add the new bucket_item table to an old database.
+    with app.app_context():
+        db.create_all()

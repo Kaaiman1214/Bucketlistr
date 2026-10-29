@@ -1,0 +1,17 @@
+{% extends "base.html" %}
+{% block title %}{{ item.title }}{% endblock %}
+{% block content %}
+<p class="mt-4"><a href="{{ url_for('views.home') }}">&larr; Back to the list</a></p>
+
+<h1>{{ item.title }}</h1>
+
+<div class="my-4">
+  {% if item.description %}
+    <p class="description">{{ item.description }}</p>
+  {% else %}
+    <p class="text-muted">No description yet.</p>
+  {% endif %}
+</div>
+
+<a class="btn btn-primary" href="{{ url_for('views.edit_item', item_id=item.id) }}">Edit item</a>
+{% endblock %}

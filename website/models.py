@@ -1,13 +1,13 @@
-from . import db
 from flask_login import UserMixin
-from sqlalchemy.sql import func
 
-class BLItem(db.Model):
+from . import db
+
+
+class BucketItem(db.Model):
     id = db.Column(db.Integer, primary_key=True)
-    text = db.Column(db.String(10000))
+    title = db.Column(db.String(200), nullable=False)
+    description = db.Column(db.Text)
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'))
-
-
 
 
 class User(db.Model, UserMixin):
@@ -15,4 +15,4 @@ class User(db.Model, UserMixin):
     email = db.Column(db.String(150), unique=True)
     password = db.Column(db.String(150))
     Username = db.Column(db.String(150))
-    bl_items = db.relationship('BLItem')
+    items = db.relationship('BucketItem')

@@ -14,8 +14,20 @@
       href="https://stackpath.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css"
       crossorigin="anonymous"
     />
+    <style>
+      .tile {
+        min-height: 110px;
+        border-left-width: 4px;
+        border-left-color: #6c757d;
+        transition: box-shadow 0.15s ease;
+      }
+      .tile:hover { box-shadow: 0 0.25rem 0.75rem rgba(0, 0, 0, 0.15); }
+      .tile .card-title a { text-decoration: none; }
+      .description { white-space: pre-wrap; }
+      @media (prefers-reduced-motion: reduce) { .tile { transition: none; } }
+    </style>
 
-    <title>{% block title %}Home{% endblock %}</title>
+    <title>{% block title %}Bucketlist{% endblock %}</title>
   </head>
   <body>
     <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
@@ -40,23 +52,16 @@
       </div>
     </nav>
 
-    {% with messages = get_flashed_messages(with_categories=true) %} {% if
-    messages %} {% for category, message in messages %} {% if category ==
-    'error' %}
-    <div class="alert alert-danger alter-dismissable fade show" role="alert">
-      {{ message }}
-      <button type="button" class="close" data-dismiss="alert">
-        <span aria-hidden="true">&times;</span>
-      </button>
-    </div>
-    {% else %}
-    <div class="alert alert-success alter-dismissable fade show" role="alert">
-      {{ message }}
-      <button type="button" class="close" data-dismiss="alert">
-        <span aria-hidden="true">&times;</span>
-      </button>
-    </div>
-    {% endif %} {% endfor %} {% endif %} {% endwith %}
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% for category, message in messages %}
+        <div class="alert alert-{{ 'danger' if category == 'error' else 'success' }} alert-dismissible fade show" role="alert">
+          {{ message }}
+          <button type="button" class="close" data-dismiss="alert">
+            <span aria-hidden="true">&times;</span>
+          </button>
+        </div>
+      {% endfor %}
+    {% endwith %}
     <div class="container">{% block content %} {% endblock %}</div>
 
     <script
@@ -75,7 +80,7 @@
       crossorigin="anonymous"
     ></script>
     <script
-     type="text/javascript"
+      type="text/javascript"
       src="{{ url_for('static', filename='index.js') }}"
     ></script>
   </body>
