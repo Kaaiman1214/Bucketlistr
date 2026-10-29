@@ -1,15 +1,25 @@
-from flask import Flask
-from flask_sqlalchemy import SQLAlchemy
+import os
+import secrets
 from os import path
+
+from flask import Flask
 from flask_login import LoginManager
+from flask_sqlalchemy import SQLAlchemy
 
 db = SQLAlchemy()
 DB_NAME = "database.db"
 DB_PATH = path.join(path.dirname(path.abspath(__file__)), DB_NAME)
 
+
 def create_app():
     app = Flask(__name__)
-    app.config['SECRET_KEY'] = 'kwhdkmBJSD&@ ^%hkasdhbchsba&#'
+    # Make sure to set a secret key, otherwise flask will create a temporary one each reboot
+    secret_key = os.environ.get('SECRET_KEY')
+    if not secret_key:
+        secret_key = secrets.token_hex(32)
+        print('WARNING: SECRET_KEY is not set, using a temporary key.')
+    app.config['SECRET_KEY'] = secret_key
+    app.config['SESSION_COOKIE_SAMESITE'] = 'Lax'
     database_uri_path = DB_PATH.replace('\\', '/')
     app.config['SQLALCHEMY_DATABASE_URI'] = f'sqlite:///{database_uri_path}'
     db.init_app(app)
@@ -35,6 +45,7 @@ def create_app():
         return User.query.get(int(id))
 
     return app
+
 
 def create_database(app):
     with app.app_context():

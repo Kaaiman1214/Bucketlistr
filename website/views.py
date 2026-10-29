@@ -2,7 +2,7 @@ from flask import Blueprint, render_template, request, flash, redirect, url_for,
 from flask_login import login_required, current_user
 
 from . import db
-from .models import BucketItem, MONTH_NAMES
+from .models import BucketItem, User, MONTH_NAMES
 
 views = Blueprint('views', __name__)
 
@@ -24,6 +24,9 @@ def get_owned_item(item_id):
 
 @views.route('/')
 def home():
+    if User.query.first() is None:
+        return redirect(url_for('auth.sign_up'))
+
     items = BucketItem.query.order_by(BucketItem.id).all()
     todo_items = [i for i in items if not i.completed]
     done_items = sorted((i for i in items if i.completed),
