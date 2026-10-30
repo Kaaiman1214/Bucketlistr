@@ -20,16 +20,13 @@
 <h1 class="text-center my-4">Bucketlist</h1>
 
 {% if user.is_authenticated %}
-<form method="POST" action="{{ url_for('views.add_item') }}" class="form-inline justify-content-center mb-5">
-  <input type="text" name="title" class="form-control mr-2 mb-2" size="36" maxlength="200"
-         placeholder="Something you want to do" aria-label="New item title" required />
-  <button type="submit" class="btn btn-primary mb-2">Add item</button>
-</form>
+<div class="text-center mb-5">
+  <a class="btn btn-primary" href="{{ url_for('views.new_item') }}"><i class="fa fa-plus"></i> New item</a>
+</div>
 {% endif %}
-
 {% if not todo_items and not done_items %}
   <p class="text-center text-muted">
-    {% if user.is_authenticated %}Nothing on the list yet. Add your first item above.{% else %}Nothing on the list yet.{% endif %}
+    {% if user.is_authenticated %}Nothing on the list yet. Use New item to add your first one.{% else %}Nothing on the list yet.{% endif %}
   </p>
 {% endif %}
 
