@@ -3,15 +3,22 @@
 
 {% macro tile(item) %}
 <div class="col-sm-6 col-lg-4 mb-4">
-  <div class="card tile h-100 {{ 'tile-done' if item.completed }}">
-    <div class="card-body">
+  <div class="card tile h-100 {{ 'tile-link' if item.has_details }} {{ 'tile-done' if item.completed }}">
+    <div class="card-body {{ 'pr-5' if user.is_authenticated }}">
       <h5 class="card-title">
-        <a href="{{ url_for('views.item', item_id=item.id) }}" class="stretched-link text-dark">{{ item.title }}</a>
+        {% if item.has_details %}
+          <a href="{{ url_for('views.item', item_id=item.id) }}" class="stretched-link text-dark">{{ item.title }}</a>
+        {% else %}
+          <span class="text-dark">{{ item.title }}</span>
+        {% endif %}
       </h5>
       {% if item.completed %}
         <p class="card-text text-success mb-0"><i class="fa fa-check"></i> {{ item.completed_label }}</p>
       {% endif %}
     </div>
+    {% if user.is_authenticated %}
+      <a class="tile-edit" href="{{ url_for('views.edit_item', item_id=item.id) }}" title="Edit" aria-label="Edit {{ item.title }}"><i class="fa fa-pencil"></i></a>
+    {% endif %}
   </div>
 </div>
 {% endmacro %}

@@ -17,6 +17,14 @@ def get_owned_item(item_id):
     return item
 
 
+def item_back_url(item):
+    """Where Back, Cancel and Save go from the edit page: the item page, or the
+    list when the item has nothing to show on its own page."""
+    if item.has_details:
+        return url_for('views.item', item_id=item.id)
+    return url_for('views.home')
+
+
 def item_sort_key(item):
     """Alphabetical by title."""
     return fold(item.title)
@@ -121,7 +129,7 @@ def validate_item(values):
         if not name:
             return 'Choose a category or enter a name for a new one.', cleaned
         if len(name) > 100:
-            return 'Category names cannot be longer than 100 characters.', cleaned
+            return 'Category names can be at most 100 characters.', cleaned
         existing = find_category(name)
         cleaned['category'] = existing
         cleaned['new_category'] = None if existing else name
@@ -220,10 +228,10 @@ def edit_item(item_id):
             prune_empty_categories()
             db.session.commit()
             flash('Changes saved!', category='success')
-            return redirect(url_for('views.item', item_id=item.id))
+            return redirect(item_back_url(item))
 
     return render_template("edit_item.html", user=current_user, item=item, values=values,
-                           back_url=url_for('views.item', item_id=item.id), **form_context())
+                           back_url=item_back_url(item), **form_context())
 
 
 @views.route('/item/<int:item_id>/delete', methods=['POST'])

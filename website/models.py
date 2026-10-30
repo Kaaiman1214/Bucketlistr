@@ -36,6 +36,11 @@ class BucketItem(db.Model):
             return f'Completed, {month} {self.completed_year}'
         return f'Completed, {self.completed_year}'
 
+    @property
+    def has_details(self):
+        """Only items with something to show get a clickable tile."""
+        return bool(self.description)
+
 
 class User(db.Model, UserMixin):
     id = db.Column(db.Integer, primary_key=True)
