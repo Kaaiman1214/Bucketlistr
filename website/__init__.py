@@ -5,6 +5,7 @@ from os import path
 from flask import Flask
 from flask_login import LoginManager
 from flask_sqlalchemy import SQLAlchemy
+from sqlalchemy import inspect, text
 
 db = SQLAlchemy()
 DB_NAME = "database.db"
@@ -50,3 +51,25 @@ def create_app():
 def create_database(app):
     with app.app_context():
         db.create_all()
+        add_missing_columns()
+
+
+def add_missing_columns():
+    """create_all() never changes existing tables, so when a model gains a column
+    we add it to the existing table ourselves. Only nullable columns can be added
+    this way (which is all this app has needed so far)."""
+    inspector = inspect(db.engine)
+    for table in db.metadata.sorted_tables:
+        existing = {column['name'] for column in inspector.get_columns(table.name)}
+        for column in table.columns:
+            if column.name in existing:
+                continue
+            if not column.nullable:
+                print(f'WARNING: cannot add NOT NULL column {table.name}.{column.name} '
+                      'automatically; delete database.db or add it by hand.')
+                continue
+            column_type = column.type.compile(dialect=db.engine.dialect)
+            db.session.execute(text(
+                f'ALTER TABLE "{table.name}" ADD COLUMN "{column.name}" {column_type}'))
+            print(f'Added missing column {table.name}.{column.name}')
+    db.session.commit()

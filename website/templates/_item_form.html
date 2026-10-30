@@ -7,6 +7,26 @@
   </div>
 
   <div class="form-group">
+    <label for="category">Category</label>
+    {% if categories %}
+      <select class="form-control" id="category" name="category" required>
+        <option value="">Choose a category</option>
+        {% for category in categories %}
+          <option value="{{ category.id }}" {% if values.category|string == category.id|string %}selected{% endif %}>{{ category.name }}</option>
+        {% endfor %}
+        <option value="__new__" {% if values.category == '__new__' %}selected{% endif %}>+ New category...</option>
+      </select>
+      <input type="text" class="form-control mt-2 {{ '' if values.category == '__new__' else 'd-none' }}"
+             id="new-category" name="new_category" maxlength="100"
+             placeholder="Name of the new category" value="{{ values.new_category }}" />
+    {% else %}
+      <input type="text" class="form-control" id="new-category" name="new_category" maxlength="100"
+             placeholder="e.g. Travel or Career goals" value="{{ values.new_category }}" required />
+      <small class="form-text text-muted">There are no categories yet, so this item creates the first one.</small>
+    {% endif %}
+  </div>
+
+  <div class="form-group">
     <label for="description">Description <span class="text-muted">(optional)</span></label>
     <textarea class="form-control" id="description" name="description" rows="6">{{ values.description }}</textarea>
   </div>

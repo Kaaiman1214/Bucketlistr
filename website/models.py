@@ -8,6 +8,12 @@ MONTH_NAMES = [
 ]
 
 
+class Category(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(100), nullable=False, unique=True)
+    items = db.relationship('BucketItem', backref='category')
+
+
 class BucketItem(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     title = db.Column(db.String(200), nullable=False)
@@ -16,6 +22,7 @@ class BucketItem(db.Model):
     completed_year = db.Column(db.Integer)
     completed_month = db.Column(db.Integer)
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'))
+    category_id = db.Column(db.Integer, db.ForeignKey('category.id'))
 
     @property
     def completed_label(self):

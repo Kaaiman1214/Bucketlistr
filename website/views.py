@@ -2,17 +2,12 @@ from flask import Blueprint, render_template, request, flash, redirect, url_for,
 from flask_login import login_required, current_user
 
 from . import db
-from .models import BucketItem, User, MONTH_NAMES
+from .models import BucketItem, Category, User, MONTH_NAMES
+from .utils import fold
 
 views = Blueprint('views', __name__)
 
-
-def completed_sort_key(item):
-    """Newest completion first. Items with a year but no month come after the
-    dated months of that year; items with no date at all come last."""
-    if item.completed_year is None:
-        return (0, 0, 0)
-    return (1, item.completed_year, item.completed_month or 0)
+NEW_CATEGORY = '__new__'
 
 
 def get_owned_item(item_id):
@@ -22,11 +17,56 @@ def get_owned_item(item_id):
     return item
 
 
+def item_sort_key(item):
+    """Alphabetical by title."""
+    return fold(item.title)
+
+
+def find_category(name):
+    """Return the category with this name (ignoring case), or None."""
+    for category in Category.query.all():
+        if fold(category.name) == fold(name):
+            return category
+    return None
+
+
+def build_sections(items):
+    """Group items by category. Categories are sorted by name and the items
+    inside a category by item_sort_key. Items without a category come last."""
+    grouped = {}
+    for item in items:
+        grouped.setdefault(item.category_id, []).append(item)
+
+    sections = []
+    for category in sorted(Category.query.all(), key=lambda c: fold(c.name)):
+        if category.id in grouped:
+            sections.append({
+                'key': str(category.id),
+                'name': category.name,
+                'bucket_items': sorted(grouped[category.id], key=item_sort_key),
+            })
+    if None in grouped:
+        sections.append({
+            'key': 'none',
+            'name': 'Uncategorized',
+            'bucket_items': sorted(grouped[None], key=item_sort_key),
+        })
+    return sections
+
+
+def prune_empty_categories():
+    """Remove categories that no longer contain any item."""
+    for category in Category.query.filter(~Category.items.any()).all():
+        db.session.delete(category)
+
+
 def blank_values():
     """Form values for the New item page."""
     return {
         'title': '',
         'description': '',
+        'category': '',
+        'new_category': '',
         'completed': False,
         'year': '',
         'month': '',
@@ -38,6 +78,8 @@ def item_values(item):
     return {
         'title': item.title,
         'description': item.description or '',
+        'category': str(item.category_id or ''),
+        'new_category': '',
         'completed': item.completed,
         'year': item.completed_year or '',
         'month': item.completed_month or '',
@@ -49,6 +91,8 @@ def read_item_form(form):
     values = {
         'title': form.get('title', '').strip(),
         'description': form.get('description', '').strip(),
+        'category': form.get('category', '').strip(),
+        'new_category': form.get('new_category', '').strip(),
         'completed': form.get('completed') == 'on',
         'year': form.get('completed_year', '').strip(),
         'month': form.get('completed_month', '').strip(),
@@ -59,11 +103,28 @@ def read_item_form(form):
 def validate_item(values):
     """Check the submitted values. Returns (error message or None, cleaned values)."""
     cleaned = {'year': None, 'month': None}
+    cleaned.update(category=None, new_category=None)
 
     if not values['title']:
         return 'Give the item a title.', cleaned
     if len(values['title']) > 200:
         return 'Title can be at most 200 characters.', cleaned
+
+    choice = values['category']
+    if choice and choice != NEW_CATEGORY:
+        category = Category.query.get(int(choice)) if choice.isdigit() else None
+        if category is None:
+            return 'Choose a category.', cleaned
+        cleaned['category'] = category
+    else:
+        name = values['new_category']
+        if not name:
+            return 'Choose a category or enter a name for a new one.', cleaned
+        if len(name) > 100:
+            return 'Category names cannot be longer than 100 characters.', cleaned
+        existing = find_category(name)
+        cleaned['category'] = existing
+        cleaned['new_category'] = None if existing else name
 
     if values['completed']:
         try:
@@ -87,6 +148,11 @@ def apply_item(item, values, cleaned):
     """Copy validated form values onto an item. The caller commits."""
     item.title = values['title']
     item.description = values['description'] or None
+    category = cleaned['category']
+    if category is None:
+        category = Category(name=cleaned['new_category'])
+        db.session.add(category)
+    item.category = category
     item.completed = values['completed']
     item.completed_year = cleaned['year'] if values['completed'] else None
     item.completed_month = cleaned['month'] if values['completed'] else None
@@ -94,7 +160,10 @@ def apply_item(item, values, cleaned):
 
 def form_context():
     """Extra template variables needed by the item form."""
-    return {'months': MONTH_NAMES}
+    return {
+        'months': MONTH_NAMES,
+        'categories': sorted(Category.query.all(), key=lambda c: fold(c.name)),
+    }
 
 
 @views.route('/')
@@ -102,12 +171,9 @@ def home():
     if User.query.first() is None:
         return redirect(url_for('auth.sign_up'))
 
-    items = BucketItem.query.order_by(BucketItem.id).all()
-    todo_items = [i for i in items if not i.completed]
-    done_items = sorted((i for i in items if i.completed),
-                        key=completed_sort_key, reverse=True)
+    items = BucketItem.query.all()
     return render_template("home.html", user=current_user,
-                           todo_items=todo_items, done_items=done_items)
+                           sections=build_sections(items))
 
 
 @views.route('/new', methods=['GET', 'POST'])
@@ -151,6 +217,7 @@ def edit_item(item_id):
             flash(error, category='error')
         else:
             apply_item(item, values, cleaned)
+            prune_empty_categories()
             db.session.commit()
             flash('Changes saved!', category='success')
             return redirect(url_for('views.item', item_id=item.id))
@@ -164,6 +231,7 @@ def edit_item(item_id):
 def delete_item(item_id):
     item = get_owned_item(item_id)
     db.session.delete(item)
+    prune_empty_categories()
     db.session.commit()
     flash('Item deleted.', category='success')
     return redirect(url_for('views.home'))

@@ -25,7 +25,10 @@
       .tile.tile-done { border-left-color: #28a745; background: #f6fbf7; }
       .tile .card-title a { text-decoration: none; }
       .description { white-space: pre-wrap; }
-      @media (prefers-reduced-motion: reduce) { .tile { transition: none; } }
+      .category-toggle { font-size: 1.25rem; font-weight: 500; text-decoration: none !important; }
+      .category-toggle .fa { display: inline-block; width: 1.1em; transition: transform 0.15s ease; }
+      .category-toggle.collapsed .fa { transform: rotate(-90deg); }
+      @media (prefers-reduced-motion: reduce) { .tile, .category-toggle .fa { transition: none; } }
     </style>
 
     <title>{% block title %}Bucketlist{% endblock %}</title>

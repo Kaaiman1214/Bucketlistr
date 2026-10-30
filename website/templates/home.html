@@ -1,14 +1,14 @@
 {% extends "base.html" %}
 {% block title %}Bucketlist{% endblock %}
 
-{% macro tile(item, done=False) %}
+{% macro tile(item) %}
 <div class="col-sm-6 col-lg-4 mb-4">
-  <div class="card tile h-100 {{ 'tile-done' if done }}">
+  <div class="card tile h-100 {{ 'tile-done' if item.completed }}">
     <div class="card-body">
       <h5 class="card-title">
         <a href="{{ url_for('views.item', item_id=item.id) }}" class="stretched-link text-dark">{{ item.title }}</a>
       </h5>
-      {% if done %}
+      {% if item.completed %}
         <p class="card-text text-success mb-0"><i class="fa fa-check"></i> {{ item.completed_label }}</p>
       {% endif %}
     </div>
@@ -24,23 +24,30 @@
   <a class="btn btn-primary" href="{{ url_for('views.new_item') }}"><i class="fa fa-plus"></i> New item</a>
 </div>
 {% endif %}
-{% if not todo_items and not done_items %}
+{% if not sections %}
   <p class="text-center text-muted">
     {% if user.is_authenticated %}Nothing on the list yet. Use New item to add your first one.{% else %}Nothing on the list yet.{% endif %}
   </p>
 {% endif %}
 
-{% if todo_items %}
-<h4 class="mb-3">To do</h4>
-<div class="row">
-  {% for item in todo_items %}{{ tile(item) }}{% endfor %}
+<div id="categories">
+  {% for section in sections %}
+  <section class="mb-4">
+    <h4 class="mb-2">
+      <button class="btn btn-link category-toggle text-left text-dark p-0" type="button"
+              data-toggle="collapse" data-target="#category-{{ section.key }}"
+              aria-expanded="true" aria-controls="category-{{ section.key }}">
+        <i class="fa fa-chevron-down" aria-hidden="true"></i>
+        {{ section.name }}
+        <span class="badge badge-secondary ml-1">{{ section.bucket_items|length }}</span>
+      </button>
+    </h4>
+    <div class="collapse show category-body" id="category-{{ section.key }}" data-key="{{ section.key }}">
+      <div class="row pt-2">
+        {% for item in section.bucket_items %}{{ tile(item) }}{% endfor %}
+      </div>
+    </div>
+  </section>
+  {% endfor %}
 </div>
-{% endif %}
-
-{% if done_items %}
-<h4 class="mb-3 mt-3">Completed</h4>
-<div class="row">
-  {% for item in done_items %}{{ tile(item, done=True) }}{% endfor %}
-</div>
-{% endif %}
 {% endblock %}

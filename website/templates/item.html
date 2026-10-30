@@ -5,6 +5,10 @@
 
 <h1>{{ item.title }}</h1>
 
+<p class="text-muted mb-1">
+  {{ item.category.name if item.category else 'Uncategorized' }}
+</p>
+
 {% if item.completed %}
   <p class="text-success"><i class="fa fa-check"></i> {{ item.completed_label }}</p>
 {% else %}
