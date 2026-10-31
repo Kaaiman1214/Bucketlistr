@@ -3,10 +3,14 @@
 {% block content %}
 <p class="mt-4"><a href="{{ url_for('views.home') }}">&larr; Back to the list</a></p>
 
-<h1>{{ item.title }}</h1>
+<h1>
+  {% if item.flag_url %}<img class="flag" src="{{ item.flag_url }}" alt="" title="{{ item.country_name }}" onerror="this.style.display='none'">{% endif %}
+  {{ item.title }}
+</h1>
 
 <p class="text-muted mb-1">
   {{ item.category.name if item.category else 'Uncategorized' }}
+  {% if item.country_name %}&middot; {{ item.country_name }}{% endif %}
 </p>
 
 {% if item.completed %}

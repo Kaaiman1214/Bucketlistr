@@ -2,6 +2,7 @@ from flask import Blueprint, render_template, request, flash, redirect, url_for,
 from flask_login import login_required, current_user
 
 from . import db
+from .countries import COUNTRIES, COUNTRY_GROUPS
 from .models import BucketItem, Category, User, MONTH_NAMES
 from .utils import fold
 
@@ -18,20 +19,16 @@ def get_owned_item(item_id):
 
 
 def item_back_url(item):
-    """Where Back, Cancel and Save go from the edit page: the item page, or the
-    list when the item has nothing to show on its own page."""
     if item.has_details:
         return url_for('views.item', item_id=item.id)
     return url_for('views.home')
 
 
 def item_sort_key(item):
-    """Alphabetical by title."""
-    return fold(item.title)
+    return (fold(item.country_name or item.title), fold(item.title))
 
 
 def find_category(name):
-    """Return the category with this name (ignoring case), or None."""
     for category in Category.query.all():
         if fold(category.name) == fold(name):
             return category
@@ -39,8 +36,6 @@ def find_category(name):
 
 
 def build_sections(items):
-    """Group items by category. Categories are sorted by name and the items
-    inside a category by item_sort_key. Items without a category come last."""
     grouped = {}
     for item in items:
         grouped.setdefault(item.category_id, []).append(item)
@@ -63,18 +58,18 @@ def build_sections(items):
 
 
 def prune_empty_categories():
-    """Remove categories that no longer contain any item."""
     for category in Category.query.filter(~Category.items.any()).all():
         db.session.delete(category)
 
 
 def blank_values():
-    """Form values for the New item page."""
     return {
         'title': '',
         'description': '',
         'category': '',
         'new_category': '',
+        'is_country': False,
+        'country': '',
         'completed': False,
         'year': '',
         'month': '',
@@ -82,12 +77,13 @@ def blank_values():
 
 
 def item_values(item):
-    """Form values for the Edit item page."""
     return {
         'title': item.title,
         'description': item.description or '',
         'category': str(item.category_id or ''),
         'new_category': '',
+        'is_country': bool(item.country_code),
+        'country': item.country_code or '',
         'completed': item.completed,
         'year': item.completed_year or '',
         'month': item.completed_month or '',
@@ -95,12 +91,13 @@ def item_values(item):
 
 
 def read_item_form(form):
-    """Read the submitted form into the same shape as blank_values()."""
     values = {
         'title': form.get('title', '').strip(),
         'description': form.get('description', '').strip(),
         'category': form.get('category', '').strip(),
         'new_category': form.get('new_category', '').strip(),
+        'is_country': form.get('is_country') == 'on',
+        'country': form.get('country', '').strip(),
         'completed': form.get('completed') == 'on',
         'year': form.get('completed_year', '').strip(),
         'month': form.get('completed_month', '').strip(),
@@ -109,9 +106,9 @@ def read_item_form(form):
 
 
 def validate_item(values):
-    """Check the submitted values. Returns (error message or None, cleaned values)."""
     cleaned = {'year': None, 'month': None}
     cleaned.update(category=None, new_category=None)
+    cleaned['country_code'] = None
 
     if not values['title']:
         return 'Give the item a title.', cleaned
@@ -134,6 +131,11 @@ def validate_item(values):
         cleaned['category'] = existing
         cleaned['new_category'] = None if existing else name
 
+    if values['is_country']:
+        if values['country'] not in COUNTRIES:
+            return 'Pick a country from the list.', cleaned
+        cleaned['country_code'] = values['country']
+
     if values['completed']:
         try:
             if values['year']:
@@ -153,7 +155,6 @@ def validate_item(values):
 
 
 def apply_item(item, values, cleaned):
-    """Copy validated form values onto an item. The caller commits."""
     item.title = values['title']
     item.description = values['description'] or None
     category = cleaned['category']
@@ -161,16 +162,17 @@ def apply_item(item, values, cleaned):
         category = Category(name=cleaned['new_category'])
         db.session.add(category)
     item.category = category
+    item.country_code = cleaned['country_code']
     item.completed = values['completed']
     item.completed_year = cleaned['year'] if values['completed'] else None
     item.completed_month = cleaned['month'] if values['completed'] else None
 
 
 def form_context():
-    """Extra template variables needed by the item form."""
     return {
         'months': MONTH_NAMES,
         'categories': sorted(Category.query.all(), key=lambda c: fold(c.name)),
+        'country_groups': COUNTRY_GROUPS,
     }
 
 

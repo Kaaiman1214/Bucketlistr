@@ -34,6 +34,28 @@
 
   <div class="form-group">
     <div class="custom-control custom-checkbox">
+      <input type="checkbox" class="custom-control-input" id="is-country" name="is_country"
+             {% if values.is_country %}checked{% endif %} />
+      <label class="custom-control-label" for="is-country">This item is a country or place (shows its flag)</label>
+    </div>
+  </div>
+
+  <div id="country-fields" class="form-group">
+    <label for="country">Country</label>
+    <select class="form-control" id="country" name="country">
+      <option value="">Choose a country...</option>
+      {% for label, places in country_groups %}
+        <optgroup label="{{ label }}">
+          {% for code, name in places %}
+            <option value="{{ code }}" {% if values.country == code %}selected{% endif %}>{{ name }}</option>
+          {% endfor %}
+        </optgroup>
+      {% endfor %}
+    </select>
+  </div>
+
+  <div class="form-group">
+    <div class="custom-control custom-checkbox">
       <input type="checkbox" class="custom-control-input" id="completed" name="completed"
              {% if values.completed %}checked{% endif %} />
       <label class="custom-control-label" for="completed">Completed</label>

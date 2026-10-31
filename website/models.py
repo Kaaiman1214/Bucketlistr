@@ -1,6 +1,7 @@
 from flask_login import UserMixin
 
 from . import db
+from .countries import COUNTRIES, flag_url as country_flag_url
 
 MONTH_NAMES = [
     'January', 'February', 'March', 'April', 'May', 'June',
@@ -23,10 +24,10 @@ class BucketItem(db.Model):
     completed_month = db.Column(db.Integer)
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'))
     category_id = db.Column(db.Integer, db.ForeignKey('category.id'))
+    country_code = db.Column(db.String(32))
 
     @property
     def completed_label(self):
-        """'Completed, Jan 2026', 'Completed, 2026' or just 'Completed'."""
         if not self.completed:
             return ''
         if self.completed_year is None:
@@ -38,8 +39,15 @@ class BucketItem(db.Model):
 
     @property
     def has_details(self):
-        """Only items with something to show get a clickable tile."""
         return bool(self.description)
+
+    @property
+    def country_name(self):
+        return COUNTRIES.get(self.country_code) if self.country_code else None
+
+    @property
+    def flag_url(self):
+        return country_flag_url(self.country_code)
 
 
 class User(db.Model, UserMixin):

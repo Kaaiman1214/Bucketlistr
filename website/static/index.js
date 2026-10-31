@@ -73,3 +73,25 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     }
 });
+
+document.addEventListener('DOMContentLoaded', function () {
+    var checkbox = document.getElementById('is-country');
+    var fields = document.getElementById('country-fields');
+    var select = document.getElementById('country');
+    var title = document.getElementById('title');
+    if (!checkbox || !fields || !select) return;
+
+    function toggle() {
+        fields.style.display = checkbox.checked ? '' : 'none';
+        select.required = checkbox.checked;
+    }
+
+    select.addEventListener('change', function () {
+        if (title && !title.value.trim() && select.value) {
+            title.value = select.options[select.selectedIndex].text;
+        }
+    });
+
+    checkbox.addEventListener('change', toggle);
+    toggle();
+});
