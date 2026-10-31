@@ -35,17 +35,25 @@
 <h1 class="text-center my-4">Bucketlist</h1>
 
 {% if user.is_authenticated %}
-<div class="text-center mb-5">
+<div class="text-center mb-4">
   <a class="btn btn-primary" href="{{ url_for('views.new_item') }}"><i class="fa fa-plus"></i> New item</a>
 </div>
 {% endif %}
+
+{% if query %}
+<p class="text-muted">
+  {{ result_count }} result{{ '' if result_count == 1 else 's' }} for &ldquo;{{ query }}&rdquo;
+  &middot; <a href="{{ url_for('views.home') }}">Clear search</a>
+</p>
+{% endif %}
+
 {% if not sections %}
   <p class="text-center text-muted">
-    {% if user.is_authenticated %}Nothing on the list yet. Use New item to add your first one.{% else %}Nothing on the list yet.{% endif %}
+    {% if query %}No items match your search.{% elif user.is_authenticated %}Nothing on the list yet. Use New item to add your first one.{% else %}Nothing on the list yet.{% endif %}
   </p>
 {% endif %}
 
-<div id="categories">
+<div id="categories"{% if query %} data-searching="1"{% endif %}>
   {% for section in sections %}
   <section class="mb-4">
     <h4 class="mb-2">

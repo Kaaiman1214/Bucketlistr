@@ -32,12 +32,16 @@
   <ul class="list-group list-group-flush mt-3">
     {% for entry in item.checklist %}
     <li class="list-group-item">
+      {% if user.is_authenticated %}
       <div class="custom-control custom-checkbox">
         <input type="checkbox" class="custom-control-input checklist-box" id="entry-{{ entry.id }}"
                data-url="{{ url_for('views.toggle_entry', item_id=item.id, entry_id=entry.id) }}"
-               {% if entry.done %}checked{% endif %} {% if not user.is_authenticated %}disabled{% endif %} />
+               {% if entry.done %}checked{% endif %} />
         <label class="custom-control-label" for="entry-{{ entry.id }}">{{ entry.text }}</label>
       </div>
+      {% else %}
+      <span class="d-inline-block text-success" style="width: 1.6em;">{% if entry.done %}<i class="fa fa-check" aria-label="Done"></i>{% endif %}</span>{{ entry.text }}
+      {% endif %}
     </li>
     {% endfor %}
   </ul>

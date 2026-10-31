@@ -49,8 +49,10 @@ document.addEventListener('DOMContentLoaded', function () {
 
     var panels = container.querySelectorAll('.category-body');
     var state = load();
+    var searching = container.hasAttribute('data-searching');
 
     Array.prototype.forEach.call(panels, function (panel) {
+        if (searching) return;
         if (!state[panel.getAttribute('data-key')]) return;
 
         panel.classList.remove('show');

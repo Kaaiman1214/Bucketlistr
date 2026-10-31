@@ -57,6 +57,12 @@
             <a class="nav-item nav-link" id="login" href="/login">Login</a>
           {% endif %}
         </div>
+        <form class="form-inline ml-lg-auto my-2 my-lg-0" method="GET" action="{{ url_for('views.home') }}" role="search">
+          <input class="form-control form-control-sm mr-2" type="search" name="q"
+                 value="{{ request.args.get('q', '') if request.endpoint == 'views.home' else '' }}"
+                 placeholder="Search items" aria-label="Search items" />
+          <button class="btn btn-outline-light btn-sm" type="submit" aria-label="Search"><i class="fa fa-search"></i></button>
+        </form>
       </div>
     </nav>
 

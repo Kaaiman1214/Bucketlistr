@@ -66,6 +66,18 @@ def prune_empty_categories():
         db.session.delete(category)
 
 
+def matches_search(item, terms):
+    parts = [
+        item.title,
+        item.description,
+        item.category.name if item.category else '',
+        item.country_name,
+        ' '.join(entry.text for entry in item.checklist),
+    ]
+    haystack = fold(' '.join(part for part in parts if part))
+    return all(term in haystack for term in terms)
+
+
 def blank_values():
     return {
         'title': '',
@@ -238,8 +250,13 @@ def home():
         return redirect(url_for('auth.sign_up'))
 
     items = BucketItem.query.options(selectinload(BucketItem.checklist)).all()
+    query = request.args.get('q', '').strip()
+    if query:
+        terms = fold(query).split()
+        items = [item for item in items if matches_search(item, terms)]
     return render_template("home.html", user=current_user,
-                           sections=build_sections(items))
+                           sections=build_sections(items),
+                           query=query, result_count=len(items))
 
 
 @views.route('/new', methods=['GET', 'POST'])
