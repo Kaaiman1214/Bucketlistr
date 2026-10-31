@@ -2,7 +2,7 @@ import os
 import secrets
 from os import path
 
-from flask import Flask
+from flask import Flask, jsonify
 from flask_login import LoginManager
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy import inspect, text
@@ -10,6 +10,9 @@ from sqlalchemy import inspect, text
 db = SQLAlchemy()
 DB_NAME = "database.db"
 DB_PATH = path.join(path.dirname(path.abspath(__file__)), DB_NAME)
+IMAGE_DIR = path.join(path.dirname(path.abspath(__file__)), 'images')
+PENDING_DIR = path.join(IMAGE_DIR, 'pending')
+MAX_UPLOAD_MB = 30
 
 
 def create_app():
@@ -20,6 +23,8 @@ def create_app():
         print('WARNING: SECRET_KEY is not set, using a temporary key.')
     app.config['SECRET_KEY'] = secret_key
     app.config['SESSION_COOKIE_SAMESITE'] = 'Lax'
+    app.config['MAX_CONTENT_LENGTH'] = MAX_UPLOAD_MB * 1024 * 1024
+    os.makedirs(PENDING_DIR, exist_ok=True)
     database_uri_path = DB_PATH.replace('\\', '/')
     app.config['SQLALCHEMY_DATABASE_URI'] = f'sqlite:///{database_uri_path}'
     db.init_app(app)
@@ -30,9 +35,16 @@ def create_app():
     app.register_blueprint(views, url_prefix='/')
     app.register_blueprint(auth, url_prefix='/')
 
+    @app.errorhandler(413)
+    def upload_too_large(error):
+        return jsonify(error=f'That photo is too large. The limit is {MAX_UPLOAD_MB} MB.'), 413
+
     from .models import User, BucketItem, get_site_name
 
     create_database(app)
+
+    from .images import remove_stale_pending
+    remove_stale_pending()
 
     login_manager = LoginManager()
     login_manager.login_view = 'auth.login'

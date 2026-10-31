@@ -1,12 +1,17 @@
+import os
 import re
+import secrets
 
-from flask import Blueprint, render_template, request, flash, redirect, url_for, abort, jsonify
+from flask import (Blueprint, render_template, request, flash, redirect, url_for, abort,
+                   jsonify, send_from_directory)
 from flask_login import login_required, current_user
 from sqlalchemy.orm import selectinload
 
-from . import db
+from . import db, IMAGE_DIR, PENDING_DIR
 from .countries import COUNTRIES, COUNTRY_GROUPS
-from .models import BucketItem, Category, ChecklistEntry, User, MONTH_NAMES
+from .models import BucketItem, Category, ChecklistEntry, Photo, User, MONTH_NAMES
+from .images import (IMAGE_NAME, delete_image_files, image_extension, move_pending_image,
+                     pending_exists)
 from .utils import fold
 
 views = Blueprint('views', __name__)
@@ -97,6 +102,8 @@ def blank_values():
         'has_checklist': False,
         'entries': [],
         'next_key': 'n0',
+        'photo_slots': [],
+        'removed_photos': [],
     }
 
 
@@ -116,7 +123,17 @@ def item_values(item):
                      'text': entry.text, 'done': entry.done}
                     for entry in item.checklist],
         'next_key': 'n0',
+        'photo_slots': [{'id': photo.id, 'name': None} for photo in item.sorted_photos],
+        'removed_photos': [],
     }
+
+
+def unique_ids(raw):
+    ids = []
+    for value in raw:
+        if value.isdigit() and int(value) not in ids:
+            ids.append(int(value))
+    return ids
 
 
 def read_entries(form, item):
@@ -137,8 +154,33 @@ def read_entries(form, item):
     return entries, f'n{new_count}'
 
 
+def read_photo_slots(form, item):
+    existing = {photo.id for photo in item.photos} if item is not None else set()
+    removed = [photo_id for photo_id in unique_ids(form.getlist('remove_photos'))
+               if photo_id in existing]
+    slots = []
+    taken = set()
+    for token in form.getlist('photo_order'):
+        if token.isdigit():
+            photo_id = int(token)
+            if photo_id in existing and photo_id not in removed and photo_id not in taken:
+                taken.add(photo_id)
+                slots.append({'id': photo_id, 'name': None})
+        elif token.startswith('new:'):
+            name = token[4:]
+            if IMAGE_NAME.fullmatch(name) and pending_exists(name) and name not in taken:
+                taken.add(name)
+                slots.append({'id': None, 'name': name})
+    if item is not None:
+        for photo in item.sorted_photos:
+            if photo.id not in taken and photo.id not in removed:
+                slots.append({'id': photo.id, 'name': None})
+    return slots, removed
+
+
 def read_item_form(form, item=None):
     entries, next_key = read_entries(form, item)
+    slots, removed = read_photo_slots(form, item)
     return {
         'title': form.get('title', '').strip(),
         'description': form.get('description', '').strip(),
@@ -152,6 +194,8 @@ def read_item_form(form, item=None):
         'has_checklist': form.get('has_checklist') == 'on',
         'entries': entries,
         'next_key': next_key,
+        'photo_slots': slots,
+        'removed_photos': removed,
     }
 
 
@@ -240,6 +284,30 @@ def apply_item(item, values, cleaned):
             entry.text = entry_values['text']
             entry.done = entry_values['done']
 
+    by_id = {photo.id: photo for photo in item.photos}
+    stale = []
+    for photo_id in values['removed_photos']:
+        photo = by_id.pop(photo_id, None)
+        if photo is not None:
+            stale.append(photo.filename)
+            item.photos.remove(photo)
+    ordered = []
+    for slot in values['photo_slots']:
+        if slot['id'] is not None:
+            photo = by_id.get(slot['id'])
+        else:
+            try:
+                move_pending_image(slot['name'])
+            except OSError:
+                continue
+            photo = Photo(filename=slot['name'])
+            item.photos.append(photo)
+        if photo is not None:
+            ordered.append(photo)
+    for position, photo in enumerate(ordered):
+        photo.position = position
+    return stale
+
 
 def form_context():
     return {
@@ -254,7 +322,8 @@ def home():
     if User.query.first() is None:
         return redirect(url_for('auth.sign_up'))
 
-    items = BucketItem.query.options(selectinload(BucketItem.checklist)).all()
+    items = BucketItem.query.options(selectinload(BucketItem.checklist),
+                                     selectinload(BucketItem.photos)).all()
     query = request.args.get('q', '').strip()
     if query:
         terms = fold(query).split()
@@ -292,6 +361,41 @@ def item(item_id):
     return render_template("item.html", user=current_user, item=item)
 
 
+@views.route('/photo/<int:photo_id>')
+def photo(photo_id):
+    photo = Photo.query.get_or_404(photo_id)
+    return send_from_directory(IMAGE_DIR, photo.filename)
+
+
+@views.route('/photos/upload', methods=['POST'])
+@login_required
+def upload_photos():
+    uploads = [storage for storage in request.files.getlist('photos')
+               if storage and storage.filename]
+    checked = []
+    for storage in uploads:
+        extension = image_extension(storage)
+        if extension is None:
+            return jsonify(error='Photos must be JPG, PNG, GIF or WebP images.'), 400
+        checked.append((storage, extension))
+
+    saved = []
+    for storage, extension in checked:
+        filename = secrets.token_hex(16) + extension
+        storage.save(os.path.join(PENDING_DIR, filename))
+        saved.append({'filename': filename,
+                      'url': url_for('views.pending_photo', name=filename)})
+    return jsonify(photos=saved)
+
+
+@views.route('/photos/pending/<name>')
+@login_required
+def pending_photo(name):
+    if not IMAGE_NAME.fullmatch(name):
+        abort(404)
+    return send_from_directory(PENDING_DIR, name)
+
+
 @views.route('/item/<int:item_id>/edit', methods=['GET', 'POST'])
 @login_required
 def edit_item(item_id):
@@ -304,9 +408,10 @@ def edit_item(item_id):
         if error:
             flash(error, category='error')
         else:
-            apply_item(item, values, cleaned)
+            stale = apply_item(item, values, cleaned)
             prune_empty_categories()
             db.session.commit()
+            delete_image_files(stale)
             flash('Changes saved!', category='success')
             return redirect(item_back_url(item))
 
@@ -318,9 +423,11 @@ def edit_item(item_id):
 @login_required
 def delete_item(item_id):
     item = get_owned_item(item_id)
+    stale = [photo.filename for photo in item.photos]
     db.session.delete(item)
     prune_empty_categories()
     db.session.commit()
+    delete_image_files(stale)
     flash('Item deleted.', category='success')
     return redirect(url_for('views.home'))
 

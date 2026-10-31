@@ -11,6 +11,20 @@
          value="{{ text }}" placeholder="Add an entry" aria-label="Checklist entry" />
 </div>
 {% endmacro %}
+{% macro photo_card(token, url, photo_id) %}
+<div class="photo-card"{% if photo_id %} data-photo-id="{{ photo_id }}"{% endif %}>
+  <input type="hidden" name="photo_order" value="{{ token }}" />
+  <div class="photo-frame">
+    <img class="form-photo" src="{{ url }}" alt="" />
+    <span class="badge badge-primary photo-badge">Preview</span>
+  </div>
+  <div class="btn-group btn-group-sm d-flex mt-1" role="group">
+    <button type="button" class="btn btn-outline-secondary photo-left" title="Move earlier" aria-label="Move earlier">&larr;</button>
+    <button type="button" class="btn btn-outline-secondary photo-right" title="Move later" aria-label="Move later">&rarr;</button>
+    <button type="button" class="btn btn-outline-danger photo-remove">Remove</button>
+  </div>
+</div>
+{% endmacro %}
 <form method="POST">
   <div class="form-group">
     <label for="title">Title</label>
@@ -39,9 +53,30 @@
   </div>
 
   <div class="form-group">
+    <label for="photos">Photos <span class="text-muted">(optional)</span></label>
+    <div id="photo-list" class="d-flex flex-wrap">
+      {% for slot in values.photo_slots %}
+        {% if slot.id %}
+          {{ photo_card(slot.id, url_for('views.photo', photo_id=slot.id), slot.id) }}
+        {% else %}
+          {{ photo_card('new:' ~ slot.name, url_for('views.pending_photo', name=slot.name), '') }}
+        {% endif %}
+      {% endfor %}
+    </div>
+    <template id="photo-card-template">{{ photo_card('__TOKEN__', '__URL__', '') }}</template>
+    <div id="removed-photos">
+      {% for photo_id in values.removed_photos %}<input type="hidden" name="remove_photos" value="{{ photo_id }}" />{% endfor %}
+    </div>
+    <input type="file" class="form-control-file" id="photos"
+           data-url="{{ url_for('views.upload_photos') }}"
+           accept="image/jpeg,image/png,image/gif,image/webp" multiple />
+    <small id="photo-status" class="form-text text-muted">Photos upload as soon as you select them and become part of the item when you save. Use the arrows to change the order; the first photo is the preview on the homepage.</small>
+  </div>
+
+  <div class="form-group">
     <label for="description">Description <span class="text-muted">(optional)</span></label>
     <textarea class="form-control" id="description" name="description" rows="6">{{ values.description }}</textarea>
-    <small class="form-text text-muted">Items without a description or checklist show as plain tiles that cannot be opened.</small>
+    <small class="form-text text-muted">Items without a description, checklist or photo show as plain tiles that cannot be opened.</small>
   </div>
 
   <div class="form-group">
@@ -100,7 +135,7 @@
   </div>
 
   <div id="checklist-fields" class="form-group">
-    <small class="form-text text-muted mb-2">Fill the empty field to add a new checklist item, to remove one simply clear its text.</small>
+    <small class="form-text text-muted mb-2">Type an entry and a new empty one appears below it. Tick the box in front of an entry to mark it as done. Clear an entry's text to remove it. Unchecking Checklist and saving deletes the whole checklist.</small>
     <div id="checklist-rows">
       {% for entry in values.entries %}{{ checklist_row(entry.key, entry.text, entry.done) }}{% endfor %}
       {{ checklist_row(values.next_key, '', false) }}

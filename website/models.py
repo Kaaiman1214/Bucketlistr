@@ -29,6 +29,7 @@ class BucketItem(db.Model):
     country_code = db.Column(db.String(32))
     checklist = db.relationship('ChecklistEntry', cascade='all, delete-orphan',
                                 order_by='ChecklistEntry.id')
+    photos = db.relationship('Photo', cascade='all, delete-orphan', order_by='Photo.id')
 
     @property
     def completed_label(self):
@@ -40,7 +41,18 @@ class BucketItem(db.Model):
 
     @property
     def has_details(self):
-        return bool(self.description) or bool(self.checklist)
+        return bool(self.description) or bool(self.checklist) or bool(self.photos)
+
+    @property
+    def sorted_photos(self):
+        return sorted(self.photos,
+                      key=lambda photo: (photo.position if photo.position is not None else 0,
+                                         photo.id))
+
+    @property
+    def first_photo(self):
+        photos = self.sorted_photos
+        return photos[0] if photos else None
 
     @property
     def country_name(self):
@@ -70,6 +82,13 @@ class ChecklistEntry(db.Model):
     item_id = db.Column(db.Integer, db.ForeignKey('bucket_item.id'), nullable=False)
     text = db.Column(db.String(200), nullable=False)
     done = db.Column(db.Boolean, default=False, nullable=False)
+
+
+class Photo(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    item_id = db.Column(db.Integer, db.ForeignKey('bucket_item.id'), nullable=False)
+    filename = db.Column(db.String(100), nullable=False)
+    position = db.Column(db.Integer)
 
 
 class User(db.Model, UserMixin):
