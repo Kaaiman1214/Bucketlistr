@@ -16,6 +16,13 @@
       {% if item.completed %}
         <p class="card-text text-success mb-0"><i class="fa fa-check"></i> {{ item.completed_label }}</p>
       {% endif %}
+      {% if item.checklist_total %}
+        <div class="progress progress-slim mt-2">
+          <div class="progress-bar bg-success" role="progressbar" data-percent="{{ item.progress_percent }}"
+               aria-valuenow="{{ item.progress_percent }}" aria-valuemin="0" aria-valuemax="100"></div>
+        </div>
+        <small class="text-muted">{{ item.checklist_done }}/{{ item.checklist_total }} &middot; {{ item.progress_percent }}%</small>
+      {% endif %}
     </div>
     {% if user.is_authenticated %}
       <a class="tile-edit" href="{{ url_for('views.edit_item', item_id=item.id) }}" title="Edit" aria-label="Edit {{ item.title }}"><i class="fa fa-pencil"></i></a>

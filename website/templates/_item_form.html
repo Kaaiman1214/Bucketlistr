@@ -1,4 +1,16 @@
 {% set editing = item is defined and item %}
+{% macro checklist_row(key, text, done) %}
+<div class="input-group mb-2 checklist-row">
+  <input type="hidden" name="entry_keys" value="{{ key }}" />
+  <div class="input-group-prepend">
+    <div class="input-group-text">
+      <input type="checkbox" name="done_{{ key }}" aria-label="Done" {% if done %}checked{% endif %} />
+    </div>
+  </div>
+  <input type="text" class="form-control checklist-text" name="text_{{ key }}" maxlength="200"
+         value="{{ text }}" placeholder="Add an entry" aria-label="Checklist entry" />
+</div>
+{% endmacro %}
 <form method="POST">
   <div class="form-group">
     <label for="title">Title</label>
@@ -29,7 +41,7 @@
   <div class="form-group">
     <label for="description">Description <span class="text-muted">(optional)</span></label>
     <textarea class="form-control" id="description" name="description" rows="6">{{ values.description }}</textarea>
-    <small class="form-text text-muted">Items without a description show as plain tiles that cannot be opened.</small>
+    <small class="form-text text-muted">Items without a description or checklist show as plain tiles that cannot be opened.</small>
   </div>
 
   <div class="form-group">
@@ -77,6 +89,23 @@
       <input type="number" class="form-control" id="completed_year" name="completed_year"
              min="1900" max="2100" placeholder="e.g. 2026" value="{{ values.year }}" />
     </div>
+  </div>
+
+  <div class="form-group">
+    <div class="custom-control custom-checkbox">
+      <input type="checkbox" class="custom-control-input" id="has-checklist" name="has_checklist"
+             {% if values.has_checklist %}checked{% endif %} />
+      <label class="custom-control-label" for="has-checklist">Checklist</label>
+    </div>
+  </div>
+
+  <div id="checklist-fields" class="form-group">
+    <small class="form-text text-muted mb-2">Fill the empty field to add a new checklist item, to remove one simply clear its text.</small>
+    <div id="checklist-rows">
+      {% for entry in values.entries %}{{ checklist_row(entry.key, entry.text, entry.done) }}{% endfor %}
+      {{ checklist_row(values.next_key, '', false) }}
+    </div>
+    <template id="checklist-template">{{ checklist_row('__KEY__', '', false) }}</template>
   </div>
 
   <button type="submit" class="btn btn-primary">{{ 'Save changes' if editing else 'Add item' }}</button>

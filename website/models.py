@@ -25,6 +25,8 @@ class BucketItem(db.Model):
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'))
     category_id = db.Column(db.Integer, db.ForeignKey('category.id'))
     country_code = db.Column(db.String(32))
+    checklist = db.relationship('ChecklistEntry', cascade='all, delete-orphan',
+                                order_by='ChecklistEntry.id')
 
     @property
     def completed_label(self):
@@ -39,7 +41,7 @@ class BucketItem(db.Model):
 
     @property
     def has_details(self):
-        return bool(self.description)
+        return bool(self.description) or bool(self.checklist)
 
     @property
     def country_name(self):
@@ -48,6 +50,27 @@ class BucketItem(db.Model):
     @property
     def flag_url(self):
         return country_flag_url(self.country_code)
+
+    @property
+    def checklist_total(self):
+        return len(self.checklist)
+
+    @property
+    def checklist_done(self):
+        return sum(1 for entry in self.checklist if entry.done)
+
+    @property
+    def progress_percent(self):
+        if not self.checklist:
+            return 0
+        return int(100 * self.checklist_done / self.checklist_total + 0.5)
+
+
+class ChecklistEntry(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    item_id = db.Column(db.Integer, db.ForeignKey('bucket_item.id'), nullable=False)
+    text = db.Column(db.String(200), nullable=False)
+    done = db.Column(db.Boolean, default=False, nullable=False)
 
 
 class User(db.Model, UserMixin):

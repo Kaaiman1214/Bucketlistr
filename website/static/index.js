@@ -95,3 +95,78 @@ document.addEventListener('DOMContentLoaded', function () {
     checkbox.addEventListener('change', toggle);
     toggle();
 });
+
+document.addEventListener('change', function (event) {
+    var box = event.target;
+    if (!box.classList || !box.classList.contains('checklist-box')) return;
+
+    var wanted = box.checked;
+    box.disabled = true;
+
+    fetch(box.getAttribute('data-url'), {
+        method: 'POST',
+        credentials: 'same-origin',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ done: wanted })
+    }).then(function (res) {
+        if (!res.ok || res.redirected) throw new Error('not saved');
+        return res.json();
+    }).then(function (data) {
+        var bar = document.getElementById('progress-bar');
+        var text = document.getElementById('progress-text');
+        if (bar) {
+            bar.setAttribute('data-percent', data.percent);
+            bar.style.width = data.percent + '%';
+            bar.setAttribute('aria-valuenow', data.percent);
+        }
+        if (text) {
+            text.textContent = data.checked + '/' + data.total + ' \u00b7 ' + data.percent + '%';
+        }
+    }).catch(function () {
+        box.checked = !wanted;
+        alert('Could not save that change. Are you still logged in?');
+    }).then(function () {
+        box.disabled = false;
+    });
+});
+
+document.addEventListener('DOMContentLoaded', function () {
+    var bars = document.querySelectorAll('.progress-bar[data-percent]');
+    Array.prototype.forEach.call(bars, function (bar) {
+        bar.style.width = bar.getAttribute('data-percent') + '%';
+    });
+});
+
+document.addEventListener('DOMContentLoaded', function () {
+    var checkbox = document.getElementById('has-checklist');
+    var fields = document.getElementById('checklist-fields');
+    var rows = document.getElementById('checklist-rows');
+    var template = document.getElementById('checklist-template');
+    if (!checkbox || !fields || !rows || !template) return;
+
+    function lastKey() {
+        var keys = rows.querySelectorAll('input[name="entry_keys"]');
+        return keys[keys.length - 1].value;
+    }
+
+    var counter = parseInt(lastKey().slice(1), 10) || 0;
+
+    function addRow() {
+        counter += 1;
+        rows.insertAdjacentHTML('beforeend', template.innerHTML.replace(/__KEY__/g, 'n' + counter));
+    }
+
+    function ensureBlankRow() {
+        var texts = rows.querySelectorAll('.checklist-text');
+        if (!texts.length || texts[texts.length - 1].value.trim() !== '') addRow();
+    }
+
+    function toggle() {
+        fields.style.display = checkbox.checked ? '' : 'none';
+        if (checkbox.checked) ensureBlankRow();
+    }
+
+    rows.addEventListener('input', ensureBlankRow);
+    checkbox.addEventListener('change', toggle);
+    toggle();
+});

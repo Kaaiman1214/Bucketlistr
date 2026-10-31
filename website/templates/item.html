@@ -19,6 +19,31 @@
   <p class="text-muted">Not completed yet</p>
 {% endif %}
 
+{% if item.checklist %}
+<div class="my-4">
+  <div class="d-flex justify-content-between mb-1">
+    <strong>Progress</strong>
+    <span id="progress-text">{{ item.checklist_done }}/{{ item.checklist_total }} &middot; {{ item.progress_percent }}%</span>
+  </div>
+  <div class="progress">
+    <div class="progress-bar bg-success" id="progress-bar" role="progressbar" data-percent="{{ item.progress_percent }}"
+         aria-valuenow="{{ item.progress_percent }}" aria-valuemin="0" aria-valuemax="100"></div>
+  </div>
+  <ul class="list-group list-group-flush mt-3">
+    {% for entry in item.checklist %}
+    <li class="list-group-item">
+      <div class="custom-control custom-checkbox">
+        <input type="checkbox" class="custom-control-input checklist-box" id="entry-{{ entry.id }}"
+               data-url="{{ url_for('views.toggle_entry', item_id=item.id, entry_id=entry.id) }}"
+               {% if entry.done %}checked{% endif %} {% if not user.is_authenticated %}disabled{% endif %} />
+        <label class="custom-control-label" for="entry-{{ entry.id }}">{{ entry.text }}</label>
+      </div>
+    </li>
+    {% endfor %}
+  </ul>
+</div>
+{% endif %}
+
 <div class="my-4">
   {% if item.description %}
     <p class="description">{{ item.description }}</p>

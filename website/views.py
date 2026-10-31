@@ -1,14 +1,18 @@
-from flask import Blueprint, render_template, request, flash, redirect, url_for, abort
+import re
+
+from flask import Blueprint, render_template, request, flash, redirect, url_for, abort, jsonify
 from flask_login import login_required, current_user
+from sqlalchemy.orm import selectinload
 
 from . import db
 from .countries import COUNTRIES, COUNTRY_GROUPS
-from .models import BucketItem, Category, User, MONTH_NAMES
+from .models import BucketItem, Category, ChecklistEntry, User, MONTH_NAMES
 from .utils import fold
 
 views = Blueprint('views', __name__)
 
 NEW_CATEGORY = '__new__'
+ENTRY_KEY = re.compile(r'[en]\d+')
 
 
 def get_owned_item(item_id):
@@ -73,6 +77,9 @@ def blank_values():
         'completed': False,
         'year': '',
         'month': '',
+        'has_checklist': False,
+        'entries': [],
+        'next_key': 'n0',
     }
 
 
@@ -87,11 +94,35 @@ def item_values(item):
         'completed': item.completed,
         'year': item.completed_year or '',
         'month': item.completed_month or '',
+        'has_checklist': bool(item.checklist),
+        'entries': [{'key': f'e{entry.id}', 'id': entry.id,
+                     'text': entry.text, 'done': entry.done}
+                    for entry in item.checklist],
+        'next_key': 'n0',
     }
 
 
-def read_item_form(form):
-    values = {
+def read_entries(form, item):
+    existing = {entry.id for entry in item.checklist} if item is not None else set()
+    entries = []
+    new_count = 0
+    for key in form.getlist('entry_keys'):
+        if not ENTRY_KEY.fullmatch(key):
+            continue
+        text = form.get(f'text_{key}', '').strip()
+        done = form.get(f'done_{key}') == 'on'
+        if key[0] == 'e':
+            if int(key[1:]) in existing:
+                entries.append({'key': key, 'id': int(key[1:]), 'text': text, 'done': done})
+        elif text:
+            entries.append({'key': f'n{new_count}', 'id': None, 'text': text, 'done': done})
+            new_count += 1
+    return entries, f'n{new_count}'
+
+
+def read_item_form(form, item=None):
+    entries, next_key = read_entries(form, item)
+    return {
         'title': form.get('title', '').strip(),
         'description': form.get('description', '').strip(),
         'category': form.get('category', '').strip(),
@@ -101,14 +132,17 @@ def read_item_form(form):
         'completed': form.get('completed') == 'on',
         'year': form.get('completed_year', '').strip(),
         'month': form.get('completed_month', '').strip(),
+        'has_checklist': form.get('has_checklist') == 'on',
+        'entries': entries,
+        'next_key': next_key,
     }
-    return values
 
 
 def validate_item(values):
     cleaned = {'year': None, 'month': None}
     cleaned.update(category=None, new_category=None)
     cleaned['country_code'] = None
+    cleaned['entries'] = []
 
     if not values['title']:
         return 'Give the item a title.', cleaned
@@ -151,6 +185,14 @@ def validate_item(values):
         if cleaned['month'] and not cleaned['year']:
             return 'Enter a year when you pick a month.', cleaned
 
+    if values['has_checklist']:
+        entries = [entry for entry in values['entries'] if entry['text']]
+        if any(len(entry['text']) > 200 for entry in entries):
+            return 'Checklist entries can be at most 200 characters.', cleaned
+        if len(entries) > 1000:
+            return 'A checklist can have at most 1000 entries.', cleaned
+        cleaned['entries'] = entries
+
     return None, cleaned
 
 
@@ -167,6 +209,20 @@ def apply_item(item, values, cleaned):
     item.completed_year = cleaned['year'] if values['completed'] else None
     item.completed_month = cleaned['month'] if values['completed'] else None
 
+    existing = {entry.id: entry for entry in item.checklist}
+    kept = {entry['id'] for entry in cleaned['entries'] if entry['id'] is not None}
+    for entry_id, entry in existing.items():
+        if entry_id not in kept:
+            item.checklist.remove(entry)
+    for entry_values in cleaned['entries']:
+        entry = existing.get(entry_values['id'])
+        if entry is None:
+            item.checklist.append(ChecklistEntry(text=entry_values['text'],
+                                                 done=entry_values['done']))
+        else:
+            entry.text = entry_values['text']
+            entry.done = entry_values['done']
+
 
 def form_context():
     return {
@@ -181,7 +237,7 @@ def home():
     if User.query.first() is None:
         return redirect(url_for('auth.sign_up'))
 
-    items = BucketItem.query.all()
+    items = BucketItem.query.options(selectinload(BucketItem.checklist)).all()
     return render_template("home.html", user=current_user,
                            sections=build_sections(items))
 
@@ -221,7 +277,7 @@ def edit_item(item_id):
     values = item_values(item)
 
     if request.method == 'POST':
-        values = read_item_form(request.form)
+        values = read_item_form(request.form, item)
         error, cleaned = validate_item(values)
         if error:
             flash(error, category='error')
@@ -245,3 +301,15 @@ def delete_item(item_id):
     db.session.commit()
     flash('Item deleted.', category='success')
     return redirect(url_for('views.home'))
+
+
+@views.route('/item/<int:item_id>/entry/<int:entry_id>/toggle', methods=['POST'])
+@login_required
+def toggle_entry(item_id, entry_id):
+    item = get_owned_item(item_id)
+    entry = ChecklistEntry.query.filter_by(id=entry_id, item_id=item.id).first_or_404()
+    payload = request.get_json(silent=True) or {}
+    entry.done = bool(payload.get('done', not entry.done))
+    db.session.commit()
+    return jsonify(done=entry.done, checked=item.checklist_done,
+                   total=item.checklist_total, percent=item.progress_percent)
