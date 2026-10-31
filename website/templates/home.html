@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% block title %}Bucketlist{% endblock %}
+{% block title %}{{ site_name }}{% endblock %}
 
 {% macro tile(item) %}
 <div class="col-sm-6 col-lg-4 mb-4">
@@ -32,7 +32,7 @@
 {% endmacro %}
 
 {% block content %}
-<h1 class="text-center my-4">Bucketlist</h1>
+<h1 class="text-center my-4">{{ site_name }}</h1>
 
 {% if user.is_authenticated %}
 <div class="text-center mb-4">

@@ -14,7 +14,6 @@ DB_PATH = path.join(path.dirname(path.abspath(__file__)), DB_NAME)
 
 def create_app():
     app = Flask(__name__)
-    # Make sure to set a secret key, otherwise flask will create a temporary one each reboot
     secret_key = os.environ.get('SECRET_KEY')
     if not secret_key:
         secret_key = secrets.token_hex(32)
@@ -31,7 +30,7 @@ def create_app():
     app.register_blueprint(views, url_prefix='/')
     app.register_blueprint(auth, url_prefix='/')
 
-    from .models import User, BucketItem
+    from .models import User, BucketItem, get_site_name
 
     create_database(app)
 
@@ -45,6 +44,10 @@ def create_app():
     def load_user(id):
         return User.query.get(int(id))
 
+    @app.context_processor
+    def inject_site_name():
+        return {'site_name': get_site_name()}
+
     return app
 
 
@@ -55,9 +58,6 @@ def create_database(app):
 
 
 def add_missing_columns():
-    """create_all() never changes existing tables, so when a model gains a column
-    we add it to the existing table ourselves. Only nullable columns can be added
-    this way (which is all this app has needed so far)."""
     inspector = inspect(db.engine)
     for table in db.metadata.sorted_tables:
         existing = {column['name'] for column in inspector.get_columns(table.name)}

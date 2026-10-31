@@ -35,11 +35,11 @@
       @media (prefers-reduced-motion: reduce) { .tile, .category-toggle .fa { transition: none; } }
     </style>
 
-    <title>{% block title %}Bucketlist{% endblock %}</title>
+    <title>{% block title %}{{ site_name }}{% endblock %}</title>
   </head>
   <body>
     <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
-      <a class="navbar-brand" href="/">Bucketlist</a>
+      <a class="navbar-brand" href="/">{{ site_name }}</a>
       <button
         class="navbar-toggler"
         type="button"

@@ -8,6 +8,8 @@ MONTH_NAMES = [
     'July', 'August', 'September', 'October', 'November', 'December',
 ]
 
+DEFAULT_SITE_NAME = 'Bucketlist'
+
 
 class Category(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -79,3 +81,15 @@ class User(db.Model, UserMixin):
     password = db.Column(db.String(150))
     Username = db.Column(db.String(150))
     items = db.relationship('BucketItem')
+
+
+class Setting(db.Model):
+    key = db.Column(db.String(50), primary_key=True)
+    value = db.Column(db.String(200))
+
+
+def get_site_name():
+    setting = Setting.query.get('site_name')
+    if setting and setting.value:
+        return setting.value
+    return DEFAULT_SITE_NAME
