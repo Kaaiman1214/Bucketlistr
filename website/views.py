@@ -29,7 +29,12 @@ def item_back_url(item):
 
 
 def item_sort_key(item):
-    return (fold(item.country_name or item.title), fold(item.title))
+    name = (fold(item.country_name or item.title), fold(item.title))
+    if not item.completed:
+        return (0, 0, 0) + name
+    if item.completed_year is None:
+        return (2, 0, 0) + name
+    return (1, -item.completed_year, -(item.completed_month or 0)) + name
 
 
 def find_category(name):

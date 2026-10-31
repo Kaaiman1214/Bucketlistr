@@ -36,9 +36,6 @@ class BucketItem(db.Model):
             return ''
         if self.completed_year is None:
             return 'Completed'
-        if self.completed_month:
-            month = MONTH_NAMES[self.completed_month - 1][:3]
-            return f'Completed, {month} {self.completed_year}'
         return f'Completed, {self.completed_year}'
 
     @property
