@@ -47,7 +47,6 @@ def sign_up():
 
     if request.method == 'POST':
         bucketlist_name = request.form.get('bucketlist_name', '').strip()
-        email = request.form.get('email', '').strip()
         Username = request.form.get('Username', '').strip()
         password1 = request.form.get('password1', '')
         password2 = request.form.get('password2', '')
@@ -56,8 +55,6 @@ def sign_up():
             flash('Give your bucketlist a name.', category='error')
         elif len(bucketlist_name) > 100:
             flash('The bucketlist name can be at most 100 characters.', category='error')
-        elif len(email) < 4:
-            flash('Must enter a valid Email Address.', category='error')
         elif len(Username) < 2:
             flash('Username must be greater than 1 character.', category='error')
         elif password1 != password2:
@@ -67,7 +64,7 @@ def sign_up():
         elif not any(char in password1 for char in SPECIAL_CHARS):
             flash('Password must contain at least one special character', category='error')
         else:
-            new_user = User(email=email, Username=Username,
+            new_user = User(Username=Username,
                             password=generate_password_hash(password1))
             db.session.add(new_user)
             db.session.add(Setting(key='site_name', value=bucketlist_name))
