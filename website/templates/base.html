@@ -34,8 +34,18 @@
       .icon-button:hover { color: #fff; }
       .topbar-search { display: flex; align-items: center; flex: 0 1 220px; height: 32px; margin-left: auto; margin-right: 1rem; padding: 0 0.75rem; background: #fff; border: 1px solid #ced4da; border-radius: 999px; color: #6c757d; }
       .topbar-search input { flex: 1; min-width: 0; margin-left: 0.5rem; border: 0; outline: 0; background: none; font-size: 0.85rem; }
+      .account-button { display: flex; align-items: center; padding: 0.25rem 0.5rem; border: 0; border-radius: 0.25rem; background: none; color: #fff; font-size: 0.9rem; }
+      .account-button:hover, .account-button:focus { background: rgba(255, 255, 255, 0.1); outline: 0; }
+      .account-name { margin: 0 0.4rem 0 0.5rem; }
+      .avatar { display: inline-flex; align-items: center; justify-content: center; width: 28px; height: 28px; border-radius: 50%; background: #0d6efd; color: #fff; font-size: 0.8rem; font-weight: 600; }
+      .topbar .dropdown-menu { min-width: 11rem; margin-top: 0.4rem; border: 1px solid #e3e6ea; border-radius: 0.5rem; box-shadow: 0 0.5rem 1.25rem rgba(0, 0, 0, 0.12); font-size: 0.9rem; }
       .content { padding: 1.5rem 1.5rem 3rem; }
       .content-inner { max-width: 1200px; margin: 0 auto; }
+      .topbar-brand { display: none; margin-right: 1rem; font-size: 1.25rem; color: #fff; }
+      .topbar-brand:hover { color: #fff; text-decoration: none; }
+      .no-sidebar .sidebar, .no-sidebar .sidebar-backdrop, .no-sidebar #sidebar-toggle { display: none; }
+      .no-sidebar .main { margin-left: 0; }
+      .no-sidebar .topbar-brand { display: block; }
       .auth-page .sidebar, .auth-page .sidebar-backdrop, .auth-page .topbar { display: none; }
       .auth-page .main { margin-left: 0; }
       .auth-page .content { display: flex; align-items: center; justify-content: center; min-height: 100vh; }
@@ -108,6 +118,7 @@
         <button class="icon-button" id="sidebar-toggle" type="button" aria-label="Show or hide the menu">
           <i class="fa fa-bars"></i>
         </button>
+        <a class="topbar-brand" href="{{ url_for('views.home') }}">{{ site_name }}</a>
         <form class="topbar-search" method="GET" action="{{ url_for('views.home') }}" role="search">
           <i class="fa fa-search" aria-hidden="true"></i>
           <input type="search" name="q"
@@ -115,7 +126,19 @@
                  placeholder="Search items..." aria-label="Search items" />
         </form>
         {% if user.is_authenticated %}
-          <a class="btn btn-sm btn-outline-light" href="{{ url_for('auth.logout') }}">Logout</a>
+          <div class="dropdown">
+            <button class="account-button" type="button" id="account-menu" data-toggle="dropdown"
+                    aria-haspopup="true" aria-expanded="false">
+              <span class="avatar">{{ (user.Username or '?')[:1]|upper }}</span>
+              <span class="account-name d-none d-sm-inline">{{ user.Username }}</span>
+              <i class="fa fa-caret-down" aria-hidden="true"></i>
+            </button>
+            <div class="dropdown-menu dropdown-menu-right" aria-labelledby="account-menu">
+              <a class="dropdown-item" href="{{ url_for('views.new_item') }}">+ Add item</a>
+              <div class="dropdown-divider"></div>
+              <a class="dropdown-item text-danger" href="{{ url_for('auth.logout') }}">Logout</a>
+            </div>
+          </div>
         {% else %}
           <a class="btn btn-sm btn-outline-light" href="{{ url_for('auth.login') }}">Login</a>
         {% endif %}
