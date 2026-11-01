@@ -1,0 +1,9 @@
+website/database.db
+website/images/
+__pycache__/
+*.pyc
+venv/
+.venv/
+.env
+.idea/
+.vscode/

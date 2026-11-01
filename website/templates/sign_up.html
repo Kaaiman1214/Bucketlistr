@@ -1,4 +1,31 @@
-{% extends "base.html" %} {% block title %}Sign Up{% endblock %}{% block 
-    content %}
-    <h1>This is the sign up page</h1>
-    {% endblock %}
+{% extends "base.html" %}
+{% block title %}Set up your account{% endblock %}
+{% block content %}
+<form method="POST" class="mt-4">
+  <h3 class="text-center">Set up your account</h3>
+  <p class="text-center text-muted">This is the only account for this bucketlist. Sign-up closes once it is created.</p>
+  <div class="form-group">
+    <label for="bucketlist_name">Name of your bucketlist</label>
+    <input type="text" class="form-control" id="bucketlist_name" name="bucketlist_name"
+           maxlength="100" placeholder="e.g. Our Bucketlist" required />
+    <small class="form-text text-muted">Shown in the menu, on the homepage and as the page title.</small>
+  </div>
+  <div class="form-group">
+    <label for="Username">Username</label>
+    <input type="text" class="form-control" id="Username" name="Username"
+           placeholder="Enter username" autocomplete="username" required />
+  </div>
+  <div class="form-group">
+    <label for="password1">Password</label>
+    <input type="password" class="form-control" id="password1" name="password1"
+           placeholder="Enter password" autocomplete="new-password" required />
+  </div>
+  <div class="form-group">
+    <label for="password2">Password (confirm)</label>
+    <input type="password" class="form-control" id="password2" name="password2"
+           placeholder="Confirm password" autocomplete="new-password" required />
+  </div>
+  <br />
+  <button type="submit" class="btn btn-primary">Create account</button>
+</form>
+{% endblock %}

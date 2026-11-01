@@ -1,0 +1,15 @@
+{% extends "base.html" %}
+{% block title %}Edit item{% endblock %}
+{% block content %}
+<p class="mt-4"><a href="{{ back_url }}">&larr; Back</a></p>
+<h1 class="mb-4">Edit item</h1>
+
+{% include "_item_form.html" %}
+
+<hr class="my-4" />
+
+<form method="POST" action="{{ url_for('views.delete_item', item_id=item.id) }}"
+      onsubmit="return confirm('Delete this item? This cannot be undone.');">
+  <button type="submit" class="btn btn-outline-danger">Delete item</button>
+</form>
+{% endblock %}

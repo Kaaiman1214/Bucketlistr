@@ -1,15 +1,76 @@
-from flask import Blueprint, render_template
+from flask import Blueprint, render_template, request, flash, redirect, url_for
+from flask_login import login_user, login_required, logout_user, current_user
+from werkzeug.security import generate_password_hash, check_password_hash
+
+from . import db
+from .models import User, Setting
 
 auth = Blueprint('auth', __name__)
 
-@auth.route('/login')
+SPECIAL_CHARS = "!@#$%^&*()-_=+[{]}\\|;:'\",<.>/?"
+
+
+def no_users_yet():
+    return User.query.first() is None
+
+
+@auth.route('/login', methods=['GET', 'POST'])
 def login():
-    return render_template("login.html", text="Testing")
+    if no_users_yet():
+        return redirect(url_for('auth.sign_up'))
+
+    if request.method == 'POST':
+        Username = request.form.get('Username', '').strip()
+        password = request.form.get('password', '')
+
+        user = User.query.filter_by(Username=Username).first()
+        if user and check_password_hash(user.password, password):
+            flash('Logged in successfully!', category='success')
+            login_user(user, remember=True)
+            return redirect(url_for('views.home'))
+        flash('Incorrect username or password.', category='error')
+
+    return render_template("login.html", user=current_user)
+
 
 @auth.route('/logout')
+@login_required
 def logout():
-    return "<p>Logout</p>"
+    logout_user()
+    return redirect(url_for('views.home'))
 
-@auth.route('/sign-up')
+
+@auth.route('/sign-up', methods=['GET', 'POST'])
 def sign_up():
-    return render_template("sign_up.html")
+    if not no_users_yet():
+        return redirect(url_for('views.home'))
+
+    if request.method == 'POST':
+        bucketlist_name = request.form.get('bucketlist_name', '').strip()
+        Username = request.form.get('Username', '').strip()
+        password1 = request.form.get('password1', '')
+        password2 = request.form.get('password2', '')
+
+        if not bucketlist_name:
+            flash('Give your bucketlist a name.', category='error')
+        elif len(bucketlist_name) > 100:
+            flash('The bucketlist name can be at most 100 characters.', category='error')
+        elif len(Username) < 2:
+            flash('Username must be greater than 1 character.', category='error')
+        elif password1 != password2:
+            flash('Passwords don\'t match.', category='error')
+        elif len(password1) < 8:
+            flash('Password must be at least 8 characters.', category='error')
+        elif not any(char in password1 for char in SPECIAL_CHARS):
+            flash('Password must contain at least one special character', category='error')
+        else:
+            new_user = User(Username=Username,
+                            password=generate_password_hash(password1))
+            db.session.add(new_user)
+            db.session.add(Setting(key='site_name', value=bucketlist_name))
+            db.session.commit()
+            login_user(new_user, remember=True)
+            flash('Account created successfully!', category='success')
+            return redirect(url_for('views.home'))
+
+    return render_template("sign_up.html", user=current_user)

@@ -1,0 +1,85 @@
+{% extends "base.html" %}
+{% block title %}{{ item.title }}{% endblock %}
+{% block content %}
+<p class="mt-4"><a href="{{ url_for('views.home') }}">&larr; Back to the list</a></p>
+
+<h1>
+  {% if item.flag_url %}<img class="flag" src="{{ item.flag_url }}" alt="" title="{{ item.country_name }}" onerror="this.style.display='none'">{% endif %}
+  {{ item.title }}
+</h1>
+
+<p class="text-muted mb-1">
+  {{ item.category.name if item.category else 'Uncategorized' }}
+  {% if item.country_name %}&middot; {{ item.country_name }}{% endif %}
+</p>
+
+{% if item.completed %}
+  <p class="text-success"><i class="fa fa-check"></i> {{ item.completed_label }}</p>
+{% else %}
+  <p class="text-muted">Not completed yet</p>
+{% endif %}
+
+{% if item.photos %}
+<div id="photo-carousel" class="carousel slide my-4" data-interval="false" data-ride="false">
+  <div class="carousel-inner">
+    {% for photo in item.sorted_photos %}
+    <div class="carousel-item {{ 'active' if loop.first }}">
+      <img class="photo-slide" src="{{ url_for('views.photo', photo_id=photo.id) }}" alt="{{ item.title }}, photo {{ loop.index }}" />
+    </div>
+    {% endfor %}
+  </div>
+  {% if item.photos|length > 1 %}
+  <a class="carousel-control-prev" href="#photo-carousel" role="button" data-slide="prev">
+    <span class="carousel-control-prev-icon" aria-hidden="true"></span>
+    <span class="sr-only">Previous</span>
+  </a>
+  <a class="carousel-control-next" href="#photo-carousel" role="button" data-slide="next">
+    <span class="carousel-control-next-icon" aria-hidden="true"></span>
+    <span class="sr-only">Next</span>
+  </a>
+  <span class="badge badge-dark photo-counter" id="photo-counter">1 / {{ item.photos|length }}</span>
+  {% endif %}
+</div>
+{% endif %}
+
+{% if item.checklist %}
+<div class="my-4">
+  <div class="d-flex justify-content-between mb-1">
+    <strong>Progress</strong>
+    <span id="progress-text">{{ item.checklist_done }}/{{ item.checklist_total }} &middot; {{ item.progress_percent }}%</span>
+  </div>
+  <div class="progress">
+    <div class="progress-bar bg-success" id="progress-bar" role="progressbar" data-percent="{{ item.progress_percent }}"
+         aria-valuenow="{{ item.progress_percent }}" aria-valuemin="0" aria-valuemax="100"></div>
+  </div>
+  <ul class="list-group list-group-flush mt-3">
+    {% for entry in item.checklist %}
+    <li class="list-group-item">
+      {% if user.is_authenticated %}
+      <div class="custom-control custom-checkbox">
+        <input type="checkbox" class="custom-control-input checklist-box" id="entry-{{ entry.id }}"
+               data-url="{{ url_for('views.toggle_entry', item_id=item.id, entry_id=entry.id) }}"
+               {% if entry.done %}checked{% endif %} />
+        <label class="custom-control-label" for="entry-{{ entry.id }}">{{ entry.text }}</label>
+      </div>
+      {% else %}
+      <span class="d-inline-block text-success" style="width: 1.6em;">{% if entry.done %}<i class="fa fa-check" aria-label="Done"></i>{% endif %}</span>{{ entry.text }}
+      {% endif %}
+    </li>
+    {% endfor %}
+  </ul>
+</div>
+{% endif %}
+
+<div class="my-4">
+  {% if item.description %}
+    <p class="description">{{ item.description }}</p>
+  {% else %}
+    <p class="text-muted">No description yet.</p>
+  {% endif %}
+</div>
+
+{% if user.is_authenticated %}
+  <a class="btn btn-primary" href="{{ url_for('views.edit_item', item_id=item.id) }}">Edit item</a>
+{% endif %}
+{% endblock %}
