@@ -12,7 +12,7 @@ DB_NAME = "database.db"
 DB_PATH = path.join(path.dirname(path.abspath(__file__)), DB_NAME)
 IMAGE_DIR = path.join(path.dirname(path.abspath(__file__)), 'images')
 PENDING_DIR = path.join(IMAGE_DIR, 'pending')
-MAX_UPLOAD_MB = 30
+MAX_UPLOAD_MB = 250
 
 
 def create_app():
@@ -39,7 +39,7 @@ def create_app():
     def upload_too_large(error):
         return jsonify(error=f'That photo is too large. The limit is {MAX_UPLOAD_MB} MB.'), 413
 
-    from .models import User, BucketItem, get_site_name
+    from .models import User, BucketItem, get_site_name, get_sidebar_categories
 
     create_database(app)
 
@@ -57,8 +57,9 @@ def create_app():
         return User.query.get(int(id))
 
     @app.context_processor
-    def inject_site_name():
-        return {'site_name': get_site_name()}
+    def inject_layout():
+        return {'site_name': get_site_name(),
+                'sidebar_categories': get_sidebar_categories()}
 
     return app
 

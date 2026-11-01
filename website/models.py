@@ -2,6 +2,7 @@ from flask_login import UserMixin
 
 from . import db
 from .countries import COUNTRIES, flag_url as country_flag_url
+from .utils import fold
 
 MONTH_NAMES = [
     'January', 'February', 'March', 'April', 'May', 'June',
@@ -108,3 +109,15 @@ def get_site_name():
     if setting and setting.value:
         return setting.value
     return DEFAULT_SITE_NAME
+
+
+def ordered_categories():
+    return sorted(Category.query.all(), key=lambda category: fold(category.name))
+
+
+def get_sidebar_categories():
+    links = [{'key': str(category.id), 'name': category.name}
+             for category in ordered_categories() if category.items]
+    if BucketItem.query.filter_by(category_id=None).first() is not None:
+        links.append({'key': 'none', 'name': 'Uncategorized'})
+    return links

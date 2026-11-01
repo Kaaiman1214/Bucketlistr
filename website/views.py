@@ -9,7 +9,8 @@ from sqlalchemy.orm import selectinload
 
 from . import db, IMAGE_DIR, PENDING_DIR
 from .countries import COUNTRIES, COUNTRY_GROUPS
-from .models import BucketItem, Category, ChecklistEntry, Photo, User, MONTH_NAMES
+from .models import (BucketItem, Category, ChecklistEntry, Photo, User, MONTH_NAMES,
+                     ordered_categories)
 from .images import (IMAGE_NAME, delete_image_files, image_extension, move_pending_image,
                      pending_exists)
 from .utils import fold
@@ -55,7 +56,7 @@ def build_sections(items):
         grouped.setdefault(item.category_id, []).append(item)
 
     sections = []
-    for category in sorted(Category.query.all(), key=lambda c: fold(c.name)):
+    for category in ordered_categories():
         if category.id in grouped:
             sections.append({
                 'key': str(category.id),
@@ -312,7 +313,7 @@ def apply_item(item, values, cleaned):
 def form_context():
     return {
         'months': MONTH_NAMES,
-        'categories': sorted(Category.query.all(), key=lambda c: fold(c.name)),
+        'categories': ordered_categories(),
         'country_groups': COUNTRY_GROUPS,
     }
 
