@@ -3,7 +3,7 @@
 
 {% macro tile(item) %}
 <div class="col-sm-6 col-lg-4 mb-3">
-  <div class="card tile {{ 'tile-link' if item.has_details }} {{ 'tile-done' if item.completed }}">
+  <div class="card tile {{ 'tile-link' if item.has_details }} {{ 'tile-done' if item.completed }} {{ 'tile-progress' if item.status == 'in_progress' }}">
     {% if item.first_photo %}
       <img class="card-img-top tile-photo" src="{{ url_for('views.photo', photo_id=item.first_photo.id) }}" alt="" loading="lazy">
     {% endif %}
@@ -18,6 +18,8 @@
       </h5>
       {% if item.completed %}
         <p class="card-text text-success mb-0"><i class="fa fa-check"></i> {{ item.completed_label }}</p>
+      {% elif item.status == 'in_progress' %}
+        <p class="card-text text-primary mb-0"><i class="fa fa-clock-o"></i> In progress</p>
       {% endif %}
       {% if item.checklist_total %}
         <div class="progress progress-slim mt-2">
