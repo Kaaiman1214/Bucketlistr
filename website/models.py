@@ -9,6 +9,12 @@ MONTH_NAMES = [
     'July', 'August', 'September', 'October', 'November', 'December',
 ]
 
+STATUS_CHOICES = [
+    ('planned', 'Planned'),
+    ('in_progress', 'In Progress'),
+    ('completed', 'Completed'),
+]
+
 DEFAULT_SITE_NAME = 'Bucketlist'
 
 
@@ -26,12 +32,21 @@ class BucketItem(db.Model):
     completed = db.Column(db.Boolean, default=False, nullable=False)
     completed_year = db.Column(db.Integer)
     completed_month = db.Column(db.Integer)
+    in_progress = db.Column(db.Boolean, default=False)
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'))
     category_id = db.Column(db.Integer, db.ForeignKey('category.id'))
     country_code = db.Column(db.String(32))
     checklist = db.relationship('ChecklistEntry', cascade='all, delete-orphan',
                                 order_by='ChecklistEntry.id')
     photos = db.relationship('Photo', cascade='all, delete-orphan', order_by='Photo.id')
+
+    @property
+    def status(self):
+        if self.completed:
+            return 'completed'
+        if self.in_progress:
+            return 'in_progress'
+        return 'planned'
 
     @property
     def completed_label(self):

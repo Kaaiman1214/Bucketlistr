@@ -1,13 +1,13 @@
 document.addEventListener('DOMContentLoaded', function () {
-    var checkbox = document.getElementById('completed');
+    var select = document.getElementById('status');
     var fields = document.getElementById('completed-fields');
-    if (!checkbox || !fields) return;
+    if (!select || !fields) return;
 
     function toggle() {
-        fields.style.display = checkbox.checked ? '' : 'none';
+        fields.style.display = select.value === 'completed' ? '' : 'none';
     }
 
-    checkbox.addEventListener('change', toggle);
+    select.addEventListener('change', toggle);
     toggle();
 });
 

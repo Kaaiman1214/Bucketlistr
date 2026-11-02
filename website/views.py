@@ -10,7 +10,7 @@ from sqlalchemy.orm import selectinload
 from . import db, IMAGE_DIR, PENDING_DIR
 from .countries import COUNTRIES, COUNTRY_GROUPS
 from .models import (BucketItem, Category, ChecklistEntry, Photo, User, MONTH_NAMES,
-                     next_category_position, ordered_categories)
+                     STATUS_CHOICES, next_category_position, ordered_categories)
 from .images import (IMAGE_NAME, delete_image_files, image_extension, move_pending_image,
                      pending_exists)
 from .utils import fold
@@ -97,6 +97,7 @@ def blank_values():
         'new_category': '',
         'is_country': False,
         'country': '',
+        'status': 'planned',
         'completed': False,
         'year': '',
         'month': '',
@@ -116,6 +117,7 @@ def item_values(item):
         'new_category': '',
         'is_country': bool(item.country_code),
         'country': item.country_code or '',
+        'status': item.status,
         'completed': item.completed,
         'year': item.completed_year or '',
         'month': item.completed_month or '',
@@ -182,6 +184,7 @@ def read_photo_slots(form, item):
 def read_item_form(form, item=None):
     entries, next_key = read_entries(form, item)
     slots, removed = read_photo_slots(form, item)
+    status = form.get('status', 'planned')
     return {
         'title': form.get('title', '').strip(),
         'description': form.get('description', '').strip(),
@@ -189,7 +192,8 @@ def read_item_form(form, item=None):
         'new_category': form.get('new_category', '').strip(),
         'is_country': form.get('is_country') == 'on',
         'country': form.get('country', '').strip(),
-        'completed': form.get('completed') == 'on',
+        'status': status,
+        'completed': status == 'completed',
         'year': form.get('completed_year', '').strip(),
         'month': form.get('completed_month', '').strip(),
         'has_checklist': form.get('has_checklist') == 'on',
@@ -210,6 +214,9 @@ def validate_item(values):
         return 'Give the item a title.', cleaned
     if len(values['title']) > 200:
         return 'Title can be at most 200 characters.', cleaned
+
+    if values['status'] not in dict(STATUS_CHOICES):
+        return 'Choose a status.', cleaned
 
     choice = values['category']
     if choice and choice != NEW_CATEGORY:
@@ -268,6 +275,7 @@ def apply_item(item, values, cleaned):
     item.category = category
     item.country_code = cleaned['country_code']
     item.completed = values['completed']
+    item.in_progress = values['status'] == 'in_progress'
     item.completed_year = cleaned['year'] if values['completed'] else None
     item.completed_month = cleaned['month'] if values['completed'] else None
 
@@ -313,6 +321,7 @@ def apply_item(item, values, cleaned):
 def form_context():
     return {
         'months': MONTH_NAMES,
+        'statuses': STATUS_CHOICES,
         'categories': ordered_categories(),
         'country_groups': COUNTRY_GROUPS,
     }
