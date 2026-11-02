@@ -6,6 +6,21 @@
   <h1 class="h3 mb-1">Settings</h1>
   <p class="text-muted mb-4">Manage your account and how the bucketlist looks.</p>
 
+  <div class="card settings-card mb-4" id="site-name">
+    <div class="card-body">
+      <h2 class="h5">Name</h2>
+      <p class="text-muted small">Shown at the top of the sidebar and as the title of the browser tab.</p>
+      <form method="POST" action="{{ url_for('settings.change_site_name') }}">
+        <div class="form-group">
+          <label for="site_name">Name of your bucketlist</label>
+          <input type="text" class="form-control" id="site_name" name="site_name"
+                 maxlength="100" value="{{ site_name }}" required />
+        </div>
+        <button type="submit" class="btn btn-primary">Save name</button>
+      </form>
+    </div>
+  </div>
+
   <div class="card settings-card mb-4" id="password">
     <div class="card-body">
       <h2 class="h5">Password</h2>

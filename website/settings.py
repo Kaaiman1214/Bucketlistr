@@ -4,6 +4,7 @@ from werkzeug.security import generate_password_hash, check_password_hash
 
 from . import db
 from .auth import SPECIAL_CHARS
+from .models import Setting
 
 settings = Blueprint('settings', __name__)
 
@@ -12,6 +13,27 @@ settings = Blueprint('settings', __name__)
 @login_required
 def settings_page():
     return render_template("settings.html", user=current_user)
+
+
+@settings.route('/settings/site-name', methods=['POST'])
+@login_required
+def change_site_name():
+    name = request.form.get('site_name', '').strip()
+
+    if not name:
+        flash('Give your bucketlist a name.', category='error')
+    elif len(name) > 100:
+        flash('The bucketlist name can be at most 100 characters.', category='error')
+    else:
+        setting = Setting.query.get('site_name')
+        if setting is None:
+            db.session.add(Setting(key='site_name', value=name))
+        else:
+            setting.value = name
+        db.session.commit()
+        flash('The name has been changed.', category='success')
+
+    return redirect(url_for('settings.settings_page', _anchor='site-name'))
 
 
 @settings.route('/settings/password', methods=['POST'])
