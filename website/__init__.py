@@ -31,9 +31,11 @@ def create_app():
 
     from .views import views
     from .auth import auth
+    from .settings import settings
 
     app.register_blueprint(views, url_prefix='/')
     app.register_blueprint(auth, url_prefix='/')
+    app.register_blueprint(settings, url_prefix='/')
 
     @app.errorhandler(413)
     def upload_too_large(error):

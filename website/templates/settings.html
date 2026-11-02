@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+{% block title %}Settings{% endblock %}
+{% block body_class %}no-sidebar{% endblock %}
+{% block content %}
+<div class="settings">
+  <h1 class="h3 mb-1">Settings</h1>
+  <p class="text-muted mb-4">Manage your account and how the bucketlist looks.</p>
+
+  <div class="card settings-card mb-4" id="password">
+    <div class="card-body">
+      <h2 class="h5">Password</h2>
+      <p class="text-muted small">Pick a new password of at least 8 characters with one special character.</p>
+      <form method="POST" action="{{ url_for('settings.change_password') }}">
+        <div class="form-group">
+          <label for="current_password">Current password</label>
+          <input type="password" class="form-control" id="current_password" name="current_password"
+                 autocomplete="current-password" required />
+        </div>
+        <div class="form-row">
+          <div class="form-group col-md-6">
+            <label for="new_password">New password</label>
+            <input type="password" class="form-control" id="new_password" name="new_password"
+                   autocomplete="new-password" required />
+          </div>
+          <div class="form-group col-md-6">
+            <label for="confirm_password">Confirm new password</label>
+            <input type="password" class="form-control" id="confirm_password" name="confirm_password"
+                   autocomplete="new-password" required />
+          </div>
+        </div>
+        <button type="submit" class="btn btn-primary">Change password</button>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}
