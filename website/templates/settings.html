@@ -21,6 +21,33 @@
     </div>
   </div>
 
+  <div class="card settings-card mb-4" id="categories">
+    <div class="card-body">
+      <h2 class="h5">Category order</h2>
+      <p class="text-muted small">The order here is used in the sidebar and on the homepage.</p>
+      {% if categories %}
+        <ul class="list-group list-group-flush" id="category-list"
+            data-url="{{ url_for('settings.order_categories') }}">
+          {% for category in categories %}
+            <li class="list-group-item d-flex align-items-center px-0 category-row" data-id="{{ category.id }}">
+              <span class="drag-handle mr-3" role="button" tabindex="0" title="Drag to change the order"
+                    aria-label="Change the order of {{ category.name }}. Use the up and down arrow keys.">
+                <i class="fa fa-bars" aria-hidden="true"></i>
+              </span>
+              <span class="flex-grow-1">
+                {{ category.name }}
+                <span class="badge badge-secondary ml-1">{{ category.items|length }}</span>
+              </span>
+            </li>
+          {% endfor %}
+        </ul>
+        <small id="category-status" class="form-text text-muted mt-2" aria-live="polite">Drag the handles to change the order of the categories.</small>
+      {% else %}
+        <p class="text-muted mb-0">There are no categories yet. They appear here once you add items.</p>
+      {% endif %}
+    </div>
+  </div>
+
   <div class="card settings-card mb-4" id="password">
     <div class="card-body">
       <h2 class="h5">Password</h2>

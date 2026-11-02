@@ -15,6 +15,7 @@ DEFAULT_SITE_NAME = 'Bucketlist'
 class Category(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(100), nullable=False, unique=True)
+    position = db.Column(db.Integer)
     items = db.relationship('BucketItem', backref='category')
 
 
@@ -112,7 +113,15 @@ def get_site_name():
 
 
 def ordered_categories():
-    return sorted(Category.query.all(), key=lambda category: fold(category.name))
+    return sorted(Category.query.all(),
+                  key=lambda category: (category.position is None, category.position or 0,
+                                        fold(category.name)))
+
+
+def next_category_position():
+    positions = [category.position for category in Category.query.all()
+                 if category.position is not None]
+    return max(positions) + 1 if positions else None
 
 
 def get_sidebar_categories():

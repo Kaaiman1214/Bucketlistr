@@ -1,10 +1,10 @@
-from flask import Blueprint, render_template, request, flash, redirect, url_for
+from flask import Blueprint, render_template, request, flash, redirect, url_for, abort, jsonify
 from flask_login import login_required, current_user
 from werkzeug.security import generate_password_hash, check_password_hash
 
 from . import db
 from .auth import SPECIAL_CHARS
-from .models import Setting
+from .models import Setting, ordered_categories
 
 settings = Blueprint('settings', __name__)
 
@@ -12,7 +12,8 @@ settings = Blueprint('settings', __name__)
 @settings.route('/settings')
 @login_required
 def settings_page():
-    return render_template("settings.html", user=current_user)
+    return render_template("settings.html", user=current_user,
+                           categories=ordered_categories())
 
 
 @settings.route('/settings/site-name', methods=['POST'])
@@ -34,6 +35,29 @@ def change_site_name():
         flash('The name has been changed.', category='success')
 
     return redirect(url_for('settings.settings_page', _anchor='site-name'))
+
+
+@settings.route('/settings/categories/order', methods=['POST'])
+@login_required
+def order_categories():
+    payload = request.get_json(silent=True) or {}
+    ids = payload.get('order')
+    if not isinstance(ids, list) or not all(isinstance(category_id, int) for category_id in ids):
+        abort(400)
+
+    current = ordered_categories()
+    remaining = {category.id: category for category in current}
+    chosen = []
+    for category_id in ids:
+        category = remaining.pop(category_id, None)
+        if category is not None:
+            chosen.append(category)
+    chosen.extend(category for category in current if category.id in remaining)
+
+    for position, category in enumerate(chosen):
+        category.position = position
+    db.session.commit()
+    return jsonify(ok=True)
 
 
 @settings.route('/settings/password', methods=['POST'])

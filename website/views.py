@@ -10,7 +10,7 @@ from sqlalchemy.orm import selectinload
 from . import db, IMAGE_DIR, PENDING_DIR
 from .countries import COUNTRIES, COUNTRY_GROUPS
 from .models import (BucketItem, Category, ChecklistEntry, Photo, User, MONTH_NAMES,
-                     ordered_categories)
+                     next_category_position, ordered_categories)
 from .images import (IMAGE_NAME, delete_image_files, image_extension, move_pending_image,
                      pending_exists)
 from .utils import fold
@@ -263,7 +263,7 @@ def apply_item(item, values, cleaned):
     item.description = values['description'] or None
     category = cleaned['category']
     if category is None:
-        category = Category(name=cleaned['new_category'])
+        category = Category(name=cleaned['new_category'], position=next_category_position())
         db.session.add(category)
     item.category = category
     item.country_code = cleaned['country_code']

@@ -376,3 +376,97 @@ document.addEventListener('DOMContentLoaded', function () {
     }
     highlight();
 });
+
+document.addEventListener('DOMContentLoaded', function () {
+    var list = document.getElementById('category-list');
+    var status = document.getElementById('category-status');
+    if (!list || !status) return;
+
+    var hint = status.textContent;
+    var url = list.getAttribute('data-url');
+    var dragging = null;
+    var changed = false;
+    var timer = null;
+
+    function currentOrder() {
+        return Array.prototype.map.call(list.children, function (row) {
+            return parseInt(row.getAttribute('data-id'), 10);
+        });
+    }
+
+    function save() {
+        status.className = 'form-text text-muted mt-2';
+        status.textContent = 'Saving...';
+        fetch(url, {
+            method: 'POST',
+            credentials: 'same-origin',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ order: currentOrder() })
+        }).then(function (res) {
+            if (!res.ok || res.redirected) throw new Error('not saved');
+            status.textContent = 'Saved.';
+        }).catch(function () {
+            status.className = 'form-text text-danger mt-2';
+            status.textContent = 'Could not save the order. Reload the page and try again.';
+        }).then(function () {
+            clearTimeout(timer);
+            timer = setTimeout(function () {
+                if (status.textContent === 'Saved.') status.textContent = hint;
+            }, 2000);
+        });
+    }
+
+    function onMove(event) {
+        var rows = Array.prototype.slice.call(list.children);
+        for (var i = 0; i < rows.length; i++) {
+            var row = rows[i];
+            if (row === dragging) continue;
+            var box = row.getBoundingClientRect();
+            if (event.clientY > box.top && event.clientY < box.bottom) {
+                if (i < rows.indexOf(dragging)) {
+                    list.insertBefore(dragging, row);
+                } else {
+                    list.insertBefore(dragging, row.nextSibling);
+                }
+                changed = true;
+                break;
+            }
+        }
+    }
+
+    function onEnd() {
+        document.removeEventListener('pointermove', onMove);
+        document.removeEventListener('pointerup', onEnd);
+        document.removeEventListener('pointercancel', onEnd);
+        if (dragging) dragging.classList.remove('dragging');
+        document.body.classList.remove('is-dragging');
+        dragging = null;
+        if (changed) save();
+        changed = false;
+    }
+
+    list.addEventListener('pointerdown', function (event) {
+        var handle = event.target.closest('.drag-handle');
+        if (!handle || (event.pointerType === 'mouse' && event.button !== 0)) return;
+        event.preventDefault();
+        dragging = handle.closest('.category-row');
+        dragging.classList.add('dragging');
+        document.body.classList.add('is-dragging');
+        document.addEventListener('pointermove', onMove);
+        document.addEventListener('pointerup', onEnd);
+        document.addEventListener('pointercancel', onEnd);
+    });
+
+    list.addEventListener('keydown', function (event) {
+        var handle = event.target.closest('.drag-handle');
+        if (!handle || (event.key !== 'ArrowUp' && event.key !== 'ArrowDown')) return;
+        event.preventDefault();
+        var row = handle.closest('.category-row');
+        var up = event.key === 'ArrowUp';
+        var neighbour = up ? row.previousElementSibling : row.nextElementSibling;
+        if (!neighbour) return;
+        list.insertBefore(row, up ? neighbour : neighbour.nextSibling);
+        handle.focus();
+        save();
+    });
+});
