@@ -1,0 +1,16 @@
+services:
+  bucketlist:
+    build: .
+    container_name: bucketlist
+    restart: unless-stopped
+    ports:
+      - "5000:5000"
+    # The secret key is optional, but if not set it will randomly generate one each reboot.
+    environment:
+      SECRET_KEY: "Set a long custom string here"
+    volumes:
+      - bucketlist-data:/data
+
+volumes:
+  bucketlist-data:
+    name: bucketlist-data

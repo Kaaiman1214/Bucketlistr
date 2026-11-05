@@ -1,19 +1,25 @@
 {% extends "base.html" %}
 {% block title %}Login{% endblock %}
+{% block body_class %}auth-page{% endblock %}
 {% block content %}
-<form method="POST" class="mt-4">
-  <h3 class="text-center">Login</h3>
-  <div class="form-group">
-    <label for="Username">Username</label>
-    <input type="text" class="form-control" id="Username" name="Username"
-           placeholder="Enter username" autocomplete="username" required />
+<div class="auth-brand">{{ site_name }}</div>
+<div class="card auth-card">
+  <div class="card-body p-4">
+    <form method="POST">
+      <h3 class="text-center mb-4">Login</h3>
+      <div class="form-group">
+        <label for="Username">Username</label>
+        <input type="text" class="form-control" id="Username" name="Username"
+               placeholder="Enter username" autocomplete="username" required />
+      </div>
+      <div class="form-group">
+        <label for="password">Password</label>
+        <input type="password" class="form-control" id="password" name="password"
+               placeholder="Enter password" autocomplete="current-password" required />
+      </div>
+      <button type="submit" class="btn btn-primary btn-block mt-4">Login</button>
+    </form>
   </div>
-  <div class="form-group">
-    <label for="password">Password</label>
-    <input type="password" class="form-control" id="password" name="password"
-           placeholder="Enter password" autocomplete="current-password" required />
-  </div>
-  <br />
-  <button type="submit" class="btn btn-primary">Login</button>
-</form>
+</div>
+<p class="text-center mt-3"><a href="{{ url_for('views.home') }}">&larr; Back to the list</a></p>
 {% endblock %}

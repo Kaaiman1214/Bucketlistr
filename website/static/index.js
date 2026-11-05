@@ -1,13 +1,13 @@
 document.addEventListener('DOMContentLoaded', function () {
-    var checkbox = document.getElementById('completed');
+    var select = document.getElementById('status');
     var fields = document.getElementById('completed-fields');
-    if (!checkbox || !fields) return;
+    if (!select || !fields) return;
 
     function toggle() {
-        fields.style.display = checkbox.checked ? '' : 'none';
+        fields.style.display = select.value === 'completed' ? '' : 'none';
     }
 
-    checkbox.addEventListener('change', toggle);
+    select.addEventListener('change', toggle);
     toggle();
 });
 
@@ -299,5 +299,174 @@ document.addEventListener('DOMContentLoaded', function () {
             }
             setBusy(-1);
         });
+    });
+});
+
+document.addEventListener('DOMContentLoaded', function () {
+    var toggle = document.getElementById('sidebar-toggle');
+    var backdrop = document.getElementById('sidebar-backdrop');
+    if (!toggle) return;
+
+    var STORAGE_KEY = 'bucketlist.sidebar';
+    var desktop = window.matchMedia('(min-width: 992px)');
+
+    toggle.addEventListener('click', function () {
+        if (desktop.matches) {
+            var collapsed = document.body.classList.toggle('sidebar-collapsed');
+            try {
+                localStorage.setItem(STORAGE_KEY, collapsed ? 'collapsed' : 'open');
+            } catch (e) {
+            }
+        } else {
+            document.body.classList.toggle('sidebar-open');
+        }
+    });
+
+    if (backdrop) {
+        backdrop.addEventListener('click', function () {
+            document.body.classList.remove('sidebar-open');
+        });
+    }
+
+    function expand(key) {
+        var panel = document.getElementById('category-' + key);
+        if (panel && !panel.classList.contains('show') && window.jQuery) {
+            window.jQuery(panel).collapse('show');
+        }
+    }
+
+    var links = document.querySelectorAll('.sidebar-link[data-key]');
+    Array.prototype.forEach.call(links, function (link) {
+        link.addEventListener('click', function () {
+            expand(link.getAttribute('data-key'));
+            document.body.classList.remove('sidebar-open');
+        });
+    });
+
+    if (window.location.hash.indexOf('#section-') === 0) {
+        expand(window.location.hash.slice('#section-'.length));
+    }
+
+    var sections = document.querySelectorAll('section[id^="section-"]');
+    if (!sections.length) return;
+
+    var waiting = false;
+
+    function highlight() {
+        waiting = false;
+        var current = sections[0];
+        Array.prototype.forEach.call(sections, function (section) {
+            if (section.getBoundingClientRect().top <= 90) current = section;
+        });
+        var key = current.id.slice('section-'.length);
+        Array.prototype.forEach.call(links, function (link) {
+            link.classList.toggle('active', link.getAttribute('data-key') === key);
+        });
+    }
+
+    window.addEventListener('scroll', function () {
+        if (!waiting) {
+            waiting = true;
+            window.requestAnimationFrame(highlight);
+        }
+    });
+
+    if (window.jQuery) {
+        window.jQuery('.category-body').on('shown.bs.collapse hidden.bs.collapse', highlight);
+    }
+    highlight();
+});
+
+document.addEventListener('DOMContentLoaded', function () {
+    var list = document.getElementById('category-list');
+    var status = document.getElementById('category-status');
+    if (!list || !status) return;
+
+    var hint = status.textContent;
+    var url = list.getAttribute('data-url');
+    var dragging = null;
+    var changed = false;
+    var timer = null;
+
+    function currentOrder() {
+        return Array.prototype.map.call(list.children, function (row) {
+            return parseInt(row.getAttribute('data-id'), 10);
+        });
+    }
+
+    function save() {
+        status.className = 'form-text text-muted mt-2';
+        status.textContent = 'Saving...';
+        fetch(url, {
+            method: 'POST',
+            credentials: 'same-origin',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ order: currentOrder() })
+        }).then(function (res) {
+            if (!res.ok || res.redirected) throw new Error('not saved');
+            status.textContent = 'Saved.';
+        }).catch(function () {
+            status.className = 'form-text text-danger mt-2';
+            status.textContent = 'Could not save the order. Reload the page and try again.';
+        }).then(function () {
+            clearTimeout(timer);
+            timer = setTimeout(function () {
+                if (status.textContent === 'Saved.') status.textContent = hint;
+            }, 2000);
+        });
+    }
+
+    function onMove(event) {
+        var rows = Array.prototype.slice.call(list.children);
+        for (var i = 0; i < rows.length; i++) {
+            var row = rows[i];
+            if (row === dragging) continue;
+            var box = row.getBoundingClientRect();
+            if (event.clientY > box.top && event.clientY < box.bottom) {
+                if (i < rows.indexOf(dragging)) {
+                    list.insertBefore(dragging, row);
+                } else {
+                    list.insertBefore(dragging, row.nextSibling);
+                }
+                changed = true;
+                break;
+            }
+        }
+    }
+
+    function onEnd() {
+        document.removeEventListener('pointermove', onMove);
+        document.removeEventListener('pointerup', onEnd);
+        document.removeEventListener('pointercancel', onEnd);
+        if (dragging) dragging.classList.remove('dragging');
+        document.body.classList.remove('is-dragging');
+        dragging = null;
+        if (changed) save();
+        changed = false;
+    }
+
+    list.addEventListener('pointerdown', function (event) {
+        var handle = event.target.closest('.drag-handle');
+        if (!handle || (event.pointerType === 'mouse' && event.button !== 0)) return;
+        event.preventDefault();
+        dragging = handle.closest('.category-row');
+        dragging.classList.add('dragging');
+        document.body.classList.add('is-dragging');
+        document.addEventListener('pointermove', onMove);
+        document.addEventListener('pointerup', onEnd);
+        document.addEventListener('pointercancel', onEnd);
+    });
+
+    list.addEventListener('keydown', function (event) {
+        var handle = event.target.closest('.drag-handle');
+        if (!handle || (event.key !== 'ArrowUp' && event.key !== 'ArrowDown')) return;
+        event.preventDefault();
+        var row = handle.closest('.category-row');
+        var up = event.key === 'ArrowUp';
+        var neighbour = up ? row.previousElementSibling : row.nextElementSibling;
+        if (!neighbour) return;
+        list.insertBefore(row, up ? neighbour : neighbour.nextSibling);
+        handle.focus();
+        save();
     });
 });

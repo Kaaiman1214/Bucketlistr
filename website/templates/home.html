@@ -2,8 +2,8 @@
 {% block title %}{{ site_name }}{% endblock %}
 
 {% macro tile(item) %}
-<div class="col-sm-6 col-lg-4 mb-4">
-  <div class="card tile {{ 'tile-link' if item.has_details }} {{ 'tile-done' if item.completed }}">
+<div class="col-sm-6 col-lg-4 mb-3">
+  <div class="card tile {{ 'tile-link' if item.has_details }} {{ 'tile-done' if item.completed }} {{ 'tile-progress' if item.status == 'in_progress' }}">
     {% if item.first_photo %}
       <img class="card-img-top tile-photo" src="{{ url_for('views.photo', photo_id=item.first_photo.id) }}" alt="" loading="lazy">
     {% endif %}
@@ -18,6 +18,8 @@
       </h5>
       {% if item.completed %}
         <p class="card-text text-success mb-0"><i class="fa fa-check"></i> {{ item.completed_label }}</p>
+      {% elif item.status == 'in_progress' %}
+        <p class="card-text text-primary mb-0"><i class="fa fa-clock-o"></i> In progress</p>
       {% endif %}
       {% if item.checklist_total %}
         <div class="progress progress-slim mt-2">
@@ -37,12 +39,6 @@
 {% block content %}
 <h1 class="text-center my-4">{{ site_name }}</h1>
 
-{% if user.is_authenticated %}
-<div class="text-center mb-4">
-  <a class="btn btn-primary" href="{{ url_for('views.new_item') }}"><i class="fa fa-plus"></i> New item</a>
-</div>
-{% endif %}
-
 {% if query %}
 <p class="text-muted">
   {{ result_count }} result{{ '' if result_count == 1 else 's' }} for &ldquo;{{ query }}&rdquo;
@@ -52,20 +48,20 @@
 
 {% if not sections %}
   <p class="text-center text-muted">
-    {% if query %}No items match your search.{% elif user.is_authenticated %}Nothing on the list yet. Use New item to add your first one.{% else %}Nothing on the list yet.{% endif %}
+    {% if query %}No items match your search.{% elif user.is_authenticated %}Nothing on the list yet. Use Add item in the account menu to add your first one.{% else %}Nothing on the list yet.{% endif %}
   </p>
 {% endif %}
 
 <div id="categories"{% if query %} data-searching="1"{% endif %}>
   {% for section in sections %}
-  <section class="mb-4">
-    <h4 class="mb-2">
+  <section class="mb-4" id="section-{{ section.key }}">
+    <h4 class="section-heading">
       <button class="btn btn-link category-toggle text-left text-dark p-0" type="button"
               data-toggle="collapse" data-target="#category-{{ section.key }}"
               aria-expanded="true" aria-controls="category-{{ section.key }}">
-        <i class="fa fa-chevron-down" aria-hidden="true"></i>
         {{ section.name }}
         <span class="badge badge-secondary ml-1">{{ section.bucket_items|length }}</span>
+        <i class="fa fa-chevron-down ml-2" aria-hidden="true"></i>
       </button>
     </h4>
     <div class="collapse show category-body" id="category-{{ section.key }}" data-key="{{ section.key }}">

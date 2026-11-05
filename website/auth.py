@@ -67,7 +67,7 @@ def sign_up():
             new_user = User(Username=Username,
                             password=generate_password_hash(password1))
             db.session.add(new_user)
-            db.session.add(Setting(key='site_name', value=bucketlist_name))
+            db.session.merge(Setting(key='site_name', value=bucketlist_name))
             db.session.commit()
             login_user(new_user, remember=True)
             flash('Account created successfully!', category='success')

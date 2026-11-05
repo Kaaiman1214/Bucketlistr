@@ -9,37 +9,60 @@ from sqlalchemy import inspect, text
 
 db = SQLAlchemy()
 DB_NAME = "database.db"
-DB_PATH = path.join(path.dirname(path.abspath(__file__)), DB_NAME)
-IMAGE_DIR = path.join(path.dirname(path.abspath(__file__)), 'images')
+DATA_DIR = path.abspath(os.environ.get('BUCKETLIST_DATA_DIR') or path.dirname(__file__))
+DB_PATH = path.join(DATA_DIR, DB_NAME)
+IMAGE_DIR = path.join(DATA_DIR, 'images')
 PENDING_DIR = path.join(IMAGE_DIR, 'pending')
-MAX_UPLOAD_MB = 30
+MAX_UPLOAD_MB = 250
+
+
+def load_secret_key():
+    secret_key = os.environ.get('SECRET_KEY')
+    if secret_key:
+        return secret_key
+
+    key_path = path.join(DATA_DIR, 'secret_key')
+    try:
+        with open(key_path) as key_file:
+            stored = key_file.read().strip()
+        if stored:
+            return stored
+    except OSError:
+        pass
+
+    secret_key = secrets.token_hex(32)
+    try:
+        descriptor = os.open(key_path, os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o600)
+        with os.fdopen(descriptor, 'w') as key_file:
+            key_file.write(secret_key)
+    except OSError:
+        print('WARNING: SECRET_KEY is not set and could not be stored, using a temporary key.')
+    return secret_key
 
 
 def create_app():
     app = Flask(__name__)
-    secret_key = os.environ.get('SECRET_KEY')
-    if not secret_key:
-        secret_key = secrets.token_hex(32)
-        print('WARNING: SECRET_KEY is not set, using a temporary key.')
-    app.config['SECRET_KEY'] = secret_key
+    os.makedirs(PENDING_DIR, exist_ok=True)
+    app.config['SECRET_KEY'] = load_secret_key()
     app.config['SESSION_COOKIE_SAMESITE'] = 'Lax'
     app.config['MAX_CONTENT_LENGTH'] = MAX_UPLOAD_MB * 1024 * 1024
-    os.makedirs(PENDING_DIR, exist_ok=True)
     database_uri_path = DB_PATH.replace('\\', '/')
     app.config['SQLALCHEMY_DATABASE_URI'] = f'sqlite:///{database_uri_path}'
     db.init_app(app)
 
     from .views import views
     from .auth import auth
+    from .settings import settings
 
     app.register_blueprint(views, url_prefix='/')
     app.register_blueprint(auth, url_prefix='/')
+    app.register_blueprint(settings, url_prefix='/')
 
     @app.errorhandler(413)
     def upload_too_large(error):
         return jsonify(error=f'That photo is too large. The limit is {MAX_UPLOAD_MB} MB.'), 413
 
-    from .models import User, BucketItem, get_site_name
+    from .models import User, BucketItem, get_site_name, get_sidebar_categories
 
     create_database(app)
 
@@ -57,8 +80,9 @@ def create_app():
         return User.query.get(int(id))
 
     @app.context_processor
-    def inject_site_name():
-        return {'site_name': get_site_name()}
+    def inject_layout():
+        return {'site_name': get_site_name(),
+                'sidebar_categories': get_sidebar_categories()}
 
     return app
 

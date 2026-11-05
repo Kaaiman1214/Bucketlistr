@@ -15,8 +15,10 @@
 
 {% if item.completed %}
   <p class="text-success"><i class="fa fa-check"></i> {{ item.completed_label }}</p>
+{% elif item.status == 'in_progress' %}
+  <p class="text-primary"><i class="fa fa-clock-o"></i> In progress</p>
 {% else %}
-  <p class="text-muted">Not completed yet</p>
+  <p class="text-muted">Planned</p>
 {% endif %}
 
 {% if item.photos %}

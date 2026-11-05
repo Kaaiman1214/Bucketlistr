@@ -2,10 +2,17 @@ from flask_login import UserMixin
 
 from . import db
 from .countries import COUNTRIES, flag_url as country_flag_url
+from .utils import fold
 
 MONTH_NAMES = [
     'January', 'February', 'March', 'April', 'May', 'June',
     'July', 'August', 'September', 'October', 'November', 'December',
+]
+
+STATUS_CHOICES = [
+    ('planned', 'Planned'),
+    ('in_progress', 'In Progress'),
+    ('completed', 'Completed'),
 ]
 
 DEFAULT_SITE_NAME = 'Bucketlist'
@@ -14,6 +21,7 @@ DEFAULT_SITE_NAME = 'Bucketlist'
 class Category(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(100), nullable=False, unique=True)
+    position = db.Column(db.Integer)
     items = db.relationship('BucketItem', backref='category')
 
 
@@ -24,12 +32,21 @@ class BucketItem(db.Model):
     completed = db.Column(db.Boolean, default=False, nullable=False)
     completed_year = db.Column(db.Integer)
     completed_month = db.Column(db.Integer)
+    in_progress = db.Column(db.Boolean, default=False)
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'))
     category_id = db.Column(db.Integer, db.ForeignKey('category.id'))
     country_code = db.Column(db.String(32))
     checklist = db.relationship('ChecklistEntry', cascade='all, delete-orphan',
                                 order_by='ChecklistEntry.id')
     photos = db.relationship('Photo', cascade='all, delete-orphan', order_by='Photo.id')
+
+    @property
+    def status(self):
+        if self.completed:
+            return 'completed'
+        if self.in_progress:
+            return 'in_progress'
+        return 'planned'
 
     @property
     def completed_label(self):
@@ -108,3 +125,23 @@ def get_site_name():
     if setting and setting.value:
         return setting.value
     return DEFAULT_SITE_NAME
+
+
+def ordered_categories():
+    return sorted(Category.query.all(),
+                  key=lambda category: (category.position is None, category.position or 0,
+                                        fold(category.name)))
+
+
+def next_category_position():
+    positions = [category.position for category in Category.query.all()
+                 if category.position is not None]
+    return max(positions) + 1 if positions else None
+
+
+def get_sidebar_categories():
+    links = [{'key': str(category.id), 'name': category.name}
+             for category in ordered_categories() if category.items]
+    if BucketItem.query.filter_by(category_id=None).first() is not None:
+        links.append({'key': 'none', 'name': 'Uncategorized'})
+    return links
