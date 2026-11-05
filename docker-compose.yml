@@ -6,7 +6,8 @@ services:
     ports:
       - "5000:5000"
     # The secret key is optional, but if not set it will randomly generate one each reboot.
-    SECRET_KEY: "Set a long custom string here"
+    environment:
+      SECRET_KEY: "Set a long custom string here"
     volumes:
       - bucketlist-data:/data
 
