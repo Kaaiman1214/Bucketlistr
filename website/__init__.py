@@ -66,8 +66,9 @@ def create_app():
 
     create_database(app)
 
-    from .images import remove_stale_pending
+    from .images import backfill_derived_images, remove_stale_pending
     remove_stale_pending()
+    backfill_derived_images(app)
 
     login_manager = LoginManager()
     login_manager.login_view = 'auth.login'

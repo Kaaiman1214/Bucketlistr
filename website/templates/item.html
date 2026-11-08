@@ -26,7 +26,7 @@
   <div class="carousel-inner">
     {% for photo in item.sorted_photos %}
     <div class="carousel-item {{ 'active' if loop.first }}">
-      <img class="photo-slide" src="{{ url_for('views.photo', photo_id=photo.id) }}" alt="{{ item.title }}, photo {{ loop.index }}" />
+      <img class="photo-slide" src="{{ url_for('views.photo', photo_id=photo.id, size='medium') }}" alt="{{ item.title }}, photo {{ loop.index }}"{% if not loop.first %} loading="lazy"{% endif %} />
     </div>
     {% endfor %}
   </div>

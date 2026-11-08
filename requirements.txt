@@ -3,3 +3,4 @@ Flask-SQLAlchemy>=3.1,<4
 SQLAlchemy>=2.0,<3
 Flask-Login>=0.6,<0.7
 waitress>=3,<4
+Pillow>=10.0

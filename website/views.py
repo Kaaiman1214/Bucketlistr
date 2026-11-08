@@ -11,8 +11,8 @@ from . import db, IMAGE_DIR, PENDING_DIR
 from .countries import COUNTRIES, COUNTRY_GROUPS
 from .models import (BucketItem, Category, ChecklistEntry, Photo, User, MONTH_NAMES,
                      STATUS_CHOICES, next_category_position, ordered_categories)
-from .images import (IMAGE_NAME, delete_image_files, image_extension, move_pending_image,
-                     pending_exists)
+from .images import (IMAGE_NAME, delete_image_files, image_extension, make_derived,
+                     move_pending_image, pending_exists, wants_derived)
 from .utils import fold
 
 views = Blueprint('views', __name__)
@@ -378,7 +378,16 @@ def item(item_id):
 @views.route('/photo/<int:photo_id>')
 def photo(photo_id):
     photo = Photo.query.get_or_404(photo_id)
-    return send_from_directory(IMAGE_DIR, photo.filename)
+    return serve_image(IMAGE_DIR, photo.filename)
+
+
+def serve_image(directory, filename):
+    size = request.args.get('size')
+    if wants_derived(filename, size):
+        derived = make_derived(directory, filename, size)
+        if derived is not None:
+            return send_from_directory(os.path.dirname(derived), os.path.basename(derived))
+    return send_from_directory(directory, filename)
 
 
 @views.route('/photos/upload', methods=['POST'])
@@ -396,9 +405,18 @@ def upload_photos():
     saved = []
     for storage, extension in checked:
         filename = secrets.token_hex(16) + extension
-        storage.save(os.path.join(PENDING_DIR, filename))
+        path = os.path.join(PENDING_DIR, filename)
+        storage.save(path)
+        if make_derived(PENDING_DIR, filename, 'thumb') is None:
+            try:
+                os.remove(path)
+            except OSError:
+                pass
+            return jsonify(error='That file could not be read as an image.'), 400
+        if wants_derived(filename, 'medium'):
+            make_derived(PENDING_DIR, filename, 'medium')
         saved.append({'filename': filename,
-                      'url': url_for('views.pending_photo', name=filename)})
+                      'url': url_for('views.pending_photo', name=filename, size='thumb')})
     return jsonify(photos=saved)
 
 
@@ -407,7 +425,7 @@ def upload_photos():
 def pending_photo(name):
     if not IMAGE_NAME.fullmatch(name):
         abort(404)
-    return send_from_directory(PENDING_DIR, name)
+    return serve_image(PENDING_DIR, name)
 
 
 @views.route('/item/<int:item_id>/edit', methods=['GET', 'POST'])

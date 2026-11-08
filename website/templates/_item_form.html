@@ -57,9 +57,9 @@
     <div id="photo-list" class="d-flex flex-wrap">
       {% for slot in values.photo_slots %}
         {% if slot.id %}
-          {{ photo_card(slot.id, url_for('views.photo', photo_id=slot.id), slot.id) }}
+          {{ photo_card(slot.id, url_for('views.photo', photo_id=slot.id, size='thumb'), slot.id) }}
         {% else %}
-          {{ photo_card('new:' ~ slot.name, url_for('views.pending_photo', name=slot.name), '') }}
+          {{ photo_card('new:' ~ slot.name, url_for('views.pending_photo', name=slot.name, size='thumb'), '') }}
         {% endif %}
       {% endfor %}
     </div>
