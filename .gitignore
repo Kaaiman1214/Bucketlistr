@@ -1,7 +1,7 @@
 website/database.db
 website/images/
 __pycache__/
-main.py/
+main.py
 *.pyc
 venv/
 .venv/
