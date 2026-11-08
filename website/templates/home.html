@@ -60,7 +60,7 @@
               data-toggle="collapse" data-target="#category-{{ section.key }}"
               aria-expanded="true" aria-controls="category-{{ section.key }}">
         {{ section.name }}
-        <span class="badge badge-secondary ml-1">{{ section.bucket_items|length }}</span>
+        <span class="badge badge-secondary ml-1">{{ section.done }}/{{ section.bucket_items|length }}</span>
         <i class="fa fa-chevron-down ml-2" aria-hidden="true"></i>
       </button>
     </h4>

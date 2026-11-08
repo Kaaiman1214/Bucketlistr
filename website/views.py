@@ -64,12 +64,14 @@ def build_sections(items):
                 'key': str(category.id),
                 'name': category.name,
                 'bucket_items': sorted(grouped[category.id], key=item_sort_key),
+                'done': sum(1 for item in grouped[category.id] if item.completed),
             })
     if None in grouped:
         sections.append({
             'key': 'none',
             'name': 'Uncategorized',
             'bucket_items': sorted(grouped[None], key=item_sort_key),
+            'done': sum(1 for item in grouped[None] if item.completed),
         })
     return sections
 
