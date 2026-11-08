@@ -470,3 +470,127 @@ document.addEventListener('DOMContentLoaded', function () {
         save();
     });
 });
+
+document.addEventListener('DOMContentLoaded', function () {
+    var form = document.getElementById('bulk-form');
+    if (!form) return;
+
+    var count = document.getElementById('bulk-count');
+    var deleteButton = document.getElementById('bulk-delete');
+    var editButton = document.getElementById('bulk-edit');
+    var selectAll = document.getElementById('bulk-all');
+
+    function boxes() {
+        return Array.prototype.slice.call(form.querySelectorAll('.tile-select'));
+    }
+
+    function update() {
+        var checked = 0;
+        boxes().forEach(function (box) {
+            var tile = box.closest('.tile');
+            if (tile) tile.classList.toggle('selected', box.checked);
+            if (box.checked) checked += 1;
+        });
+        Array.prototype.forEach.call(form.querySelectorAll('.category-select'), function (box) {
+            var tiles = box.closest('section').querySelectorAll('.tile-select');
+            var ticked = Array.prototype.filter.call(tiles, function (tile) { return tile.checked; }).length;
+            box.checked = tiles.length > 0 && ticked === tiles.length;
+            box.indeterminate = ticked > 0 && ticked < tiles.length;
+        });
+        count.textContent = checked + ' selected';
+        deleteButton.disabled = checked === 0;
+        editButton.disabled = checked === 0;
+        selectAll.textContent = checked > 0 && checked === boxes().length ? 'Unselect all' : 'Select all';
+        return checked;
+    }
+
+    function setSelecting(on) {
+        form.classList.toggle('selecting', on);
+        if (!on) {
+            boxes().forEach(function (box) { box.checked = false; });
+            update();
+        }
+        try {
+            var url = new URL(window.location.href);
+            if (on) {
+                url.searchParams.set('select', '1');
+            } else {
+                url.searchParams.delete('select');
+            }
+            window.history.replaceState(null, '', url);
+        } catch (e) {
+        }
+    }
+
+    form.addEventListener('click', function (event) {
+        if (!form.classList.contains('selecting')) return;
+        var tile = event.target.closest('.tile');
+        if (!tile || event.target.classList.contains('tile-select')) return;
+        event.preventDefault();
+        var box = tile.querySelector('.tile-select');
+        if (box) {
+            box.checked = !box.checked;
+            update();
+        }
+    });
+
+    form.addEventListener('change', function (event) {
+        var target = event.target;
+        if (target.classList.contains('category-select')) {
+            Array.prototype.forEach.call(target.closest('section').querySelectorAll('.tile-select'), function (tile) {
+                tile.checked = target.checked;
+            });
+            update();
+        } else if (target.classList.contains('tile-select')) {
+            update();
+        }
+    });
+
+    selectAll.addEventListener('click', function () {
+        var everything = boxes();
+        var allSelected = everything.length > 0 && everything.every(function (box) { return box.checked; });
+        everything.forEach(function (box) { box.checked = !allSelected; });
+        update();
+    });
+
+    document.getElementById('bulk-cancel').addEventListener('click', function () {
+        setSelecting(false);
+    });
+
+    form.addEventListener('submit', function (event) {
+        var checked = update();
+        var editing = event.submitter && event.submitter.id === 'bulk-edit';
+        var question = 'Delete ' + checked + ' item' + (checked === 1 ? '' : 's') + '? This cannot be undone.';
+        if (!checked || (!editing && !window.confirm(question))) event.preventDefault();
+    });
+
+    if (new URLSearchParams(window.location.search).get('select') === '1') {
+        setSelecting(true);
+    }
+    update();
+});
+
+document.addEventListener('DOMContentLoaded', function () {
+    var box = document.getElementById('bulk-mode');
+    if (!box) return;
+
+    var title = document.getElementById('title');
+    var titles = document.getElementById('titles');
+    var button = document.getElementById('save-button');
+
+    function toggle() {
+        var on = box.checked;
+        Array.prototype.forEach.call(document.querySelectorAll('.single-only'), function (element) {
+            element.classList.toggle('d-none', on);
+        });
+        Array.prototype.forEach.call(document.querySelectorAll('.bulk-only'), function (element) {
+            element.classList.toggle('d-none', !on);
+        });
+        title.required = !on;
+        titles.required = on;
+        button.textContent = on ? 'Add items' : 'Add item';
+    }
+
+    box.addEventListener('change', toggle);
+    toggle();
+});

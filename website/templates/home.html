@@ -4,6 +4,9 @@
 {% macro tile(item) %}
 <div class="col-sm-6 col-lg-4 mb-3">
   <div class="card tile {{ 'tile-link' if item.has_details }} {{ 'tile-done' if item.completed }} {{ 'tile-progress' if item.status == 'in_progress' }}">
+    {% if user.is_authenticated %}
+      <input type="checkbox" class="tile-select" name="item_ids" value="{{ item.id }}" aria-label="Select {{ item.title }}">
+    {% endif %}
     {% if item.first_photo %}
       <img class="card-img-top tile-photo" src="{{ url_for('views.photo', photo_id=item.first_photo.id, size='thumb') }}" alt="" loading="lazy">
     {% endif %}
@@ -52,10 +55,16 @@
   </p>
 {% endif %}
 
+{% if user.is_authenticated %}
+<form method="POST" id="bulk-form" action="{{ url_for('views.bulk_delete') }}">
+{% endif %}
 <div id="categories"{% if query %} data-searching="1"{% endif %}>
   {% for section in sections %}
   <section class="mb-4" id="section-{{ section.key }}">
     <h4 class="section-heading">
+      {% if user.is_authenticated %}
+        <input type="checkbox" class="category-select" aria-label="Select all items in {{ section.name }}">
+      {% endif %}
       <button class="btn btn-link category-toggle text-left text-dark p-0" type="button"
               data-toggle="collapse" data-target="#category-{{ section.key }}"
               aria-expanded="true" aria-controls="category-{{ section.key }}">
@@ -72,4 +81,15 @@
   </section>
   {% endfor %}
 </div>
+{% if user.is_authenticated %}
+  <div class="bulk-bar" id="bulk-bar">
+    <span id="bulk-count">0 selected</span>
+    <button type="button" class="btn btn-sm btn-outline-light" id="bulk-all">Select all</button>
+    <button type="submit" class="btn btn-sm btn-outline-light" id="bulk-edit"
+            formaction="{{ url_for('views.bulk_edit') }}" disabled><i class="fa fa-pencil"></i> Edit all</button>
+    <button type="submit" class="btn btn-sm btn-danger" id="bulk-delete" disabled><i class="fa fa-trash"></i> Delete selected</button>
+    <button type="button" class="btn btn-sm btn-outline-light" id="bulk-cancel">Cancel</button>
+  </div>
+</form>
+{% endif %}
 {% endblock %}

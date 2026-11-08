@@ -18,6 +18,8 @@ from .utils import fold
 views = Blueprint('views', __name__)
 
 NEW_CATEGORY = '__new__'
+NO_COUNTRY = '__none__'
+MAX_BULK_ITEMS = 200
 ENTRY_KEY = re.compile(r'[en]\d+')
 
 
@@ -26,6 +28,14 @@ def get_owned_item(item_id):
     if item.user_id != current_user.id:
         abort(403)
     return item
+
+
+def owned_items(raw_ids):
+    ids = unique_ids(raw_ids)
+    if not ids:
+        return []
+    return BucketItem.query.filter(BucketItem.id.in_(ids),
+                                   BucketItem.user_id == current_user.id).all()
 
 
 def item_back_url(item):
@@ -110,6 +120,8 @@ def blank_values():
         'next_key': 'n0',
         'photo_slots': [],
         'removed_photos': [],
+        'bulk': False,
+        'titles': '',
     }
 
 
@@ -269,6 +281,95 @@ def validate_item(values):
     return None, cleaned
 
 
+def parse_titles(text):
+    titles = []
+    seen = set()
+    for line in text.splitlines():
+        title = line.strip()
+        if title and fold(title) not in seen:
+            seen.add(fold(title))
+            titles.append(title)
+    return titles
+
+
+def validate_bulk(values):
+    titles = parse_titles(values['titles'])
+    if not titles:
+        return 'Enter at least one item, one per line.', titles, None
+    if len(titles) > MAX_BULK_ITEMS:
+        return f'You can add at most {MAX_BULK_ITEMS} items at once.', titles, None
+    if any(len(title) > 200 for title in titles):
+        return 'Titles can be at most 200 characters.', titles, None
+    shared = dict(values, title=titles[0], has_checklist=False, entries=[])
+    error, cleaned = validate_item(shared)
+    return error, titles, cleaned
+
+
+def read_bulk_edit(form):
+    return {
+        'category': form.get('category', '').strip(),
+        'new_category': form.get('new_category', '').strip(),
+        'status': form.get('status', '').strip(),
+        'year': form.get('completed_year', '').strip(),
+        'month': form.get('completed_month', '').strip(),
+        'country': form.get('country', '').strip(),
+    }
+
+
+def validate_bulk_edit(values):
+    cleaned = {'change_category': False, 'category': None, 'new_category': None,
+               'status': None, 'year': None, 'month': None,
+               'change_country': False, 'country_code': None}
+
+    choice = values['category']
+    if choice == NEW_CATEGORY:
+        name = values['new_category']
+        if not name:
+            return 'Enter a name for the new category.', cleaned
+        if len(name) > 100:
+            return 'Category names can be at most 100 characters.', cleaned
+        existing = find_category(name)
+        cleaned.update(change_category=True, category=existing,
+                       new_category=None if existing else name)
+    elif choice:
+        category = Category.query.get(int(choice)) if choice.isdigit() else None
+        if category is None:
+            return 'Choose a category.', cleaned
+        cleaned.update(change_category=True, category=category)
+
+    status = values['status']
+    if status:
+        if status not in dict(STATUS_CHOICES):
+            return 'Choose a status.', cleaned
+        cleaned['status'] = status
+        if status == 'completed':
+            try:
+                if values['year']:
+                    cleaned['year'] = int(values['year'])
+                    if not 1900 <= cleaned['year'] <= 2100:
+                        raise ValueError
+                if values['month']:
+                    cleaned['month'] = int(values['month'])
+                    if not 1 <= cleaned['month'] <= 12:
+                        raise ValueError
+            except ValueError:
+                return 'Enter a valid year (1900-2100) and month.', cleaned
+            if cleaned['month'] and not cleaned['year']:
+                return 'Enter a year when you pick a month.', cleaned
+
+    country = values['country']
+    if country == NO_COUNTRY:
+        cleaned.update(change_country=True, country_code=None)
+    elif country:
+        if country not in COUNTRIES:
+            return 'Pick a country from the list.', cleaned
+        cleaned.update(change_country=True, country_code=country)
+
+    if not (cleaned['change_category'] or cleaned['status'] or cleaned['change_country']):
+        return 'Choose at least one thing to change.', cleaned
+    return None, cleaned
+
+
 def apply_item(item, values, cleaned):
     item.title = values['title']
     item.description = values['description'] or None
@@ -354,16 +455,45 @@ def new_item():
 
     if request.method == 'POST':
         values = read_item_form(request.form)
-        error, cleaned = validate_item(values)
-        if error:
-            flash(error, category='error')
+        values['bulk'] = request.form.get('bulk') == 'on'
+        values['titles'] = request.form.get('titles', '')
+
+        if values['bulk']:
+            error, titles, cleaned = validate_bulk(values)
+            if error:
+                flash(error, category='error')
+            else:
+                category = cleaned['category']
+                if category is None:
+                    category = Category(name=cleaned['new_category'],
+                                        position=next_category_position())
+                    db.session.add(category)
+                for title in titles:
+                    db.session.add(BucketItem(
+                        user_id=current_user.id,
+                        title=title,
+                        category=category,
+                        country_code=cleaned['country_code'],
+                        completed=values['completed'],
+                        in_progress=values['status'] == 'in_progress',
+                        completed_year=cleaned['year'] if values['completed'] else None,
+                        completed_month=cleaned['month'] if values['completed'] else None,
+                    ))
+                db.session.commit()
+                flash(f"Added {len(titles)} item{'' if len(titles) == 1 else 's'}!",
+                      category='success')
+                return redirect(url_for('views.home'))
         else:
-            item = BucketItem(user_id=current_user.id)
-            apply_item(item, values, cleaned)
-            db.session.add(item)
-            db.session.commit()
-            flash('Item added!', category='success')
-            return redirect(url_for('views.home'))
+            error, cleaned = validate_item(values)
+            if error:
+                flash(error, category='error')
+            else:
+                item = BucketItem(user_id=current_user.id)
+                apply_item(item, values, cleaned)
+                db.session.add(item)
+                db.session.commit()
+                flash('Item added!', category='success')
+                return redirect(url_for('views.home'))
 
     return render_template("new_item.html", user=current_user, values=values,
                            back_url=url_for('views.home'), **form_context())
@@ -461,6 +591,68 @@ def delete_item(item_id):
     db.session.commit()
     delete_image_files(stale)
     flash('Item deleted.', category='success')
+    return redirect(url_for('views.home'))
+
+
+@views.route('/items/edit', methods=['GET', 'POST'])
+@login_required
+def bulk_edit():
+    items = owned_items(request.form.getlist('item_ids'))
+    if not items:
+        flash('No items were selected.', category='error')
+        return redirect(url_for('views.home'))
+    items.sort(key=lambda item: fold(item.title))
+
+    values = {'category': '', 'new_category': '', 'status': '', 'year': '',
+              'month': '', 'country': ''}
+    if request.form.get('apply'):
+        values = read_bulk_edit(request.form)
+        error, cleaned = validate_bulk_edit(values)
+        if error:
+            flash(error, category='error')
+        else:
+            category = cleaned['category']
+            if cleaned['change_category'] and category is None:
+                category = Category(name=cleaned['new_category'],
+                                    position=next_category_position())
+                db.session.add(category)
+            for item in items:
+                if cleaned['change_category']:
+                    item.category = category
+                if cleaned['status']:
+                    done = cleaned['status'] == 'completed'
+                    item.completed = done
+                    item.in_progress = cleaned['status'] == 'in_progress'
+                    item.completed_year = cleaned['year'] if done else None
+                    item.completed_month = cleaned['month'] if done else None
+                if cleaned['change_country']:
+                    item.country_code = cleaned['country_code']
+            prune_empty_categories()
+            db.session.commit()
+            flash(f"Updated {len(items)} item{'' if len(items) == 1 else 's'}.",
+                  category='success')
+            return redirect(url_for('views.home'))
+
+    return render_template("bulk_edit.html", user=current_user, items=items, values=values,
+                           back_url=url_for('views.home', select=1), **form_context())
+
+
+@views.route('/items/delete', methods=['POST'])
+@login_required
+def bulk_delete():
+    items = owned_items(request.form.getlist('item_ids'))
+    if not items:
+        flash('No items were selected.', category='error')
+        return redirect(url_for('views.home'))
+
+    stale = []
+    for item in items:
+        stale.extend(photo.filename for photo in item.photos)
+        db.session.delete(item)
+    prune_empty_categories()
+    db.session.commit()
+    delete_image_files(stale)
+    flash(f"Deleted {len(items)} item{'' if len(items) == 1 else 's'}.", category='success')
     return redirect(url_for('views.home'))
 
 
