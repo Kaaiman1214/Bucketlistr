@@ -44,11 +44,13 @@ def create_app():
     app = Flask(__name__)
     os.makedirs(PENDING_DIR, exist_ok=True)
     app.config['SECRET_KEY'] = load_secret_key()
-    app.config['SESSION_COOKIE_SAMESITE'] = 'Lax'
     app.config['MAX_CONTENT_LENGTH'] = MAX_UPLOAD_MB * 1024 * 1024
     database_uri_path = DB_PATH.replace('\\', '/')
     app.config['SQLALCHEMY_DATABASE_URI'] = f'sqlite:///{database_uri_path}'
     db.init_app(app)
+
+    from .security import init_security
+    init_security(app)
 
     from .views import views
     from .auth import auth

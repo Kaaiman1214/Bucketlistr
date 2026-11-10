@@ -1,9 +1,10 @@
-from flask import Blueprint, render_template, request, flash, redirect, url_for
+from flask import Blueprint, render_template, request, flash, redirect, url_for, make_response
 from flask_login import login_user, login_required, logout_user, current_user
 from werkzeug.security import generate_password_hash, check_password_hash
 
 from . import db
 from .models import User, Setting
+from .security import client_ip, login_ip_limiter, login_user_limiter, wait_message
 
 auth = Blueprint('auth', __name__)
 
@@ -23,11 +24,24 @@ def login():
         Username = request.form.get('Username', '').strip()
         password = request.form.get('password', '')
 
+        ip_key = client_ip()
+        user_key = Username.lower()
+        wait = max(login_ip_limiter.retry_after(ip_key), login_user_limiter.retry_after(user_key))
+        if wait:
+            flash(wait_message(wait), category='error')
+            response = make_response(render_template("login.html", user=current_user), 429)
+            response.headers['Retry-After'] = str(wait)
+            return response
+
         user = User.query.filter_by(Username=Username).first()
         if user and check_password_hash(user.password, password):
+            login_ip_limiter.reset(ip_key)
+            login_user_limiter.reset(user_key)
             flash('Logged in successfully!', category='success')
             login_user(user, remember=True)
             return redirect(url_for('views.home'))
+        login_ip_limiter.record(ip_key)
+        login_user_limiter.record(user_key)
         flash('Incorrect username or password.', category='error')
 
     return render_template("login.html", user=current_user)
