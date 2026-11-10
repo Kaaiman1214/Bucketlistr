@@ -56,6 +56,14 @@
       .section-heading { margin-bottom: 0.75rem; padding-bottom: 0.5rem; border-bottom: 1px solid #dee2e6; }
       .tile { border: 1px solid #e9ecef; border-radius: 0.5rem; overflow: hidden; box-shadow: 0 1px 2px rgba(16, 24, 40, 0.06); transition: box-shadow 0.15s ease; }
       .settings { max-width: 720px; }
+      .stat-card { border: 1px solid #e9ecef; border-radius: 0.5rem; box-shadow: 0 1px 2px rgba(16, 24, 40, 0.06); }
+      .stat-number { font-size: 2rem; font-weight: 700; line-height: 1.1; }
+      .stat-label { font-size: 0.8rem; letter-spacing: 0.04em; text-transform: uppercase; color: #6c757d; }
+      .stat-row { display: flex; align-items: center; margin-bottom: 0.6rem; }
+      .stat-row-label { flex: 0 0 9rem; padding-right: 0.75rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+      .stat-row .progress { flex: 1; }
+      .stat-row-value { flex: 0 0 4.5rem; padding-left: 0.75rem; text-align: right; color: #6c757d; font-size: 0.9rem; }
+      .place { display: inline-block; margin: 0 1rem 0.5rem 0; }
       .settings-card { border: 1px solid #e9ecef; border-radius: 0.5rem; box-shadow: 0 1px 2px rgba(16, 24, 40, 0.06); }
       .drag-handle { padding: 0.25rem 0.5rem; color: #6c757d; cursor: grab; touch-action: none; user-select: none; }
       .drag-handle:hover, .drag-handle:focus { color: #212529; outline: 0; }
@@ -122,7 +130,8 @@
 
     <aside class="sidebar" id="sidebar">
       <a class="sidebar-brand" href="{{ url_for('views.home') }}">{{ site_name }}</a>
-      <div class="sidebar-label">Categories</div>
+      <a class="sidebar-link{{ ' active' if request.endpoint == 'views.stats' }}" href="{{ url_for('views.stats') }}"><i class="fa fa-bar-chart" aria-hidden="true"></i> Stats</a>
+      <div class="sidebar-label mt-3">Categories</div>
       <nav>
         {% for category in sidebar_categories %}
           <a class="sidebar-link" data-key="{{ category.key }}"

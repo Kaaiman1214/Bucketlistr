@@ -42,6 +42,10 @@
 {% block content %}
 <h1 class="text-center my-4">{{ site_name }}</h1>
 
+{% if not query and summary.total %}
+  {% include "_stat_cards.html" %}
+{% endif %}
+
 {% if query %}
 <p class="text-muted">
   {{ result_count }} result{{ '' if result_count == 1 else 's' }} for &ldquo;{{ query }}&rdquo;

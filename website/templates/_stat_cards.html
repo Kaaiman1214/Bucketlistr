@@ -1,0 +1,26 @@
+<div class="row">
+  <div class="col-6 col-lg-3 mb-3">
+    <div class="card stat-card h-100"><div class="card-body">
+      <div class="stat-number">{{ summary.total }}</div>
+      <div class="stat-label">Items</div>
+    </div></div>
+  </div>
+  <div class="col-6 col-lg-3 mb-3">
+    <div class="card stat-card h-100"><div class="card-body">
+      <div class="stat-number text-success">{{ summary.completed }}</div>
+      <div class="stat-label">Completed &middot; {{ summary.percent }}%</div>
+    </div></div>
+  </div>
+  <div class="col-6 col-lg-3 mb-3">
+    <div class="card stat-card h-100"><div class="card-body">
+      <div class="stat-number text-primary">{{ summary.in_progress }}</div>
+      <div class="stat-label">In progress</div>
+    </div></div>
+  </div>
+  <div class="col-6 col-lg-3 mb-3">
+    <div class="card stat-card h-100"><div class="card-body">
+      <div class="stat-number">{{ summary.planned }}</div>
+      <div class="stat-label">Planned</div>
+    </div></div>
+  </div>
+</div>

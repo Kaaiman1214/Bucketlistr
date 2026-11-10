@@ -13,6 +13,7 @@ from .models import (BucketItem, Category, ChecklistEntry, Photo, User, MONTH_NA
                      STATUS_CHOICES, next_category_position, ordered_categories)
 from .images import (IMAGE_NAME, delete_image_files, image_extension, make_derived,
                      move_pending_image, pending_exists, wants_derived)
+from .stats import build_stats, summarize
 from .utils import fold
 
 views = Blueprint('views', __name__)
@@ -439,13 +440,21 @@ def home():
 
     items = BucketItem.query.options(selectinload(BucketItem.checklist),
                                      selectinload(BucketItem.photos)).all()
+    summary = summarize(items)
     query = request.args.get('q', '').strip()
     if query:
         terms = fold(query).split()
         items = [item for item in items if matches_search(item, terms)]
     return render_template("home.html", user=current_user,
-                           sections=build_sections(items),
+                           sections=build_sections(items), summary=summary,
                            query=query, result_count=len(items))
+
+
+@views.route('/stats')
+def stats():
+    items = BucketItem.query.options(selectinload(BucketItem.checklist)).all()
+    data = build_stats(items, ordered_categories())
+    return render_template("stats.html", user=current_user, stats=data, summary=data)
 
 
 @views.route('/new', methods=['GET', 'POST'])
