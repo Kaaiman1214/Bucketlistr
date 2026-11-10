@@ -47,7 +47,7 @@
     &middot; {{ stats.continents_visited }}/{{ stats.continents_total }} continents
   </p>
   {% for place in stats.places %}
-    <span class="place"><img class="flag" src="{{ place.flag }}" alt="" loading="lazy" onerror="this.style.display='none'">{{ place.name }}</span>
+    <a class="place text-dark" href="{{ url_for('views.country', code=place.code) }}"><img class="flag" src="{{ place.flag }}" alt="" loading="lazy" onerror="this.style.display='none'">{{ place.name }}</a>
   {% else %}
     <p class="text-muted mb-0">No places visited yet.</p>
   {% endfor %}

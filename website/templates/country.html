@@ -1,0 +1,19 @@
+{% extends "base.html" %}
+{% block title %}{{ name }}{% endblock %}
+{% from "_tile.html" import tile with context %}
+{% block content %}
+<p class="mt-2"><a href="{{ url_for('views.stats') }}">&larr; Back to stats</a></p>
+<h1 class="text-center my-4">
+  <img class="flag" src="{{ flag }}" alt="" onerror="this.style.display='none'">
+  {{ name }}
+</h1>
+
+{% if items %}
+  <p class="text-center text-muted">{{ done }}/{{ items|length }} completed</p>
+  <div class="row pt-2">
+    {% for item in items %}{{ tile(item) }}{% endfor %}
+  </div>
+{% else %}
+  <p class="text-center text-muted">No items with this country yet.</p>
+{% endif %}
+{% endblock %}

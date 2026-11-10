@@ -54,7 +54,7 @@ def build_stats(items, categories):
 
     visited = {item.country_code for item in completed if item.country_code in COUNTRIES}
     listed = {item.country_code for item in items if item.country_code in COUNTRIES}
-    places = [{'name': COUNTRIES[code], 'flag': flag_url(code)}
+    places = [{'code': code, 'name': COUNTRIES[code], 'flag': flag_url(code)}
               for code in sorted(visited, key=lambda code: fold(COUNTRIES[code]))]
 
     return {

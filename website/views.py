@@ -8,7 +8,7 @@ from flask_login import login_required, current_user
 from sqlalchemy.orm import selectinload
 
 from . import db, IMAGE_DIR, PENDING_DIR
-from .countries import COUNTRIES, COUNTRY_GROUPS
+from .countries import COUNTRIES, COUNTRY_GROUPS, flag_url
 from .models import (BucketItem, Category, ChecklistEntry, Photo, User, MONTH_NAMES,
                      STATUS_CHOICES, next_category_position, ordered_categories)
 from .images import (IMAGE_NAME, delete_image_files, image_extension, make_derived,
@@ -455,6 +455,19 @@ def stats():
     items = BucketItem.query.options(selectinload(BucketItem.checklist)).all()
     data = build_stats(items, ordered_categories())
     return render_template("stats.html", user=current_user, stats=data, summary=data)
+
+
+@views.route('/country/<code>')
+def country(code):
+    if code not in COUNTRIES:
+        abort(404)
+    items = BucketItem.query.options(selectinload(BucketItem.checklist),
+                                     selectinload(BucketItem.photos)
+                                     ).filter_by(country_code=code).all()
+    items.sort(key=item_sort_key)
+    return render_template("country.html", user=current_user, name=COUNTRIES[code],
+                           flag=flag_url(code), items=items,
+                           done=sum(1 for item in items if item.completed))
 
 
 @views.route('/new', methods=['GET', 'POST'])
