@@ -44,7 +44,7 @@
   <p class="text-muted">
     {{ stats.countries_visited }} of {{ stats.countries_listed }} countries on the list
     {% if stats.other_visited %}&middot; {{ stats.other_visited }} other region{{ '' if stats.other_visited == 1 else 's' }}{% endif %}
-    {% if stats.steps_total %}&middot; {{ stats.steps_done }} of {{ stats.steps_total }} checklist steps{% endif %}
+    &middot; {{ stats.continents_visited }}/{{ stats.continents_total }} continents
   </p>
   {% for place in stats.places %}
     <span class="place"><img class="flag" src="{{ place.flag }}" alt="" loading="lazy" onerror="this.style.display='none'">{{ place.name }}</span>

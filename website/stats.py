@@ -1,7 +1,7 @@
 import re
 from collections import Counter
 
-from .countries import COUNTRIES, flag_url
+from .countries import CONTINENT_NAMES, COUNTRIES, continent_of, flag_url
 from .utils import fold
 
 
@@ -65,6 +65,6 @@ def build_stats(items, categories):
         'countries_visited': sum(1 for code in visited if is_country(code)),
         'countries_listed': sum(1 for code in listed if is_country(code)),
         'other_visited': sum(1 for code in visited if not is_country(code)),
-        'steps_done': sum(item.checklist_done for item in items),
-        'steps_total': sum(item.checklist_total for item in items),
+        'continents_visited': len({continent_of(code) for code in visited}),
+        'continents_total': len(CONTINENT_NAMES),
     }

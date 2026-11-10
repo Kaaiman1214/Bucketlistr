@@ -373,3 +373,46 @@ COUNTRY_GROUPS = [
     ('Regions and other places',
      _by_name(code for code in COUNTRIES if not _is_country(code))),
 ]
+
+
+CONTINENT_NAMES = ['Africa', 'Antarctica', 'Asia', 'Europe', 'North America', 'Oceania',
+                   'South America']
+
+_CONTINENT_CODES = {
+    'Africa': """
+        ao bf bi bj bw cd cf cg ci cm cv dj dz eg eh er et ga gh gm gn gq gw ke km lr ls ly
+        ma mg ml mr mu mw mz na ne ng re rw sc sd sh sl sn so somaliland ss st sz td tg tn
+        tz ug yt za zm zw
+    """,
+    'Antarctica': 'aq bv gs hm tf',
+    'Asia': """
+        ae af am az bd bh bn bt cn ge hk id il in io iq ir jo jp kg kh kp kr kw kz la lb lk
+        mm mn mo mv my np om ph pk ps qa sa sg south_ossetia sy th tibet tj tl tm tr tw uz
+        vn ye
+    """,
+    'Europe': """
+        ad al at ax ba be bg by ch cq cy cz de dk ee es fi fo fr gb gg gi gr hr hu ie im is
+        it je li lt lu lv mc md me mk mt nl no northern_cyprus occitania pl pt ro rs ru se si
+        sj sk sm transnistria ua va xk
+    """,
+    'North America': """
+        ag ai aw bb bl bm bq bs bz ca cr cu cw dm do fr-cp gd gl gp gt hn ht jm kn ky lc mf
+        mq ms mx ni pa pm pr sv sx tc tt us vc vg vi
+    """,
+    'Oceania': """
+        as au cc ck cx easter_island fj fm gu ki mh mp nc nf nr nu nz pf pg pn pw sb tk to
+        torres_strait_islands tv um us-hi vu wf ws
+    """,
+    'South America': 'ar bo br cl co ec fk gf gy pe py sr uy ve',
+}
+
+CONTINENT_OF = {}
+for _continent, _codes in _CONTINENT_CODES.items():
+    for _code in _codes.split():
+        CONTINENT_OF[_code] = _continent
+
+
+def continent_of(code):
+    if code in CONTINENT_OF:
+        return CONTINENT_OF[code]
+    return CONTINENT_OF.get(code.split('-')[0])
