@@ -1,0 +1,77 @@
+{% extends "base.html" %}
+{% block title %}Edit {{ items|length }} item{{ '' if items|length == 1 else 's' }}{% endblock %}
+{% block body_class %}no-sidebar{% endblock %}
+{% block content %}
+<p class="mt-4"><a href="{{ back_url }}">&larr; Back to the list</a></p>
+<h1 class="mb-2">Edit {{ items|length }} item{{ '' if items|length == 1 else 's' }}</h1>
+<p class="text-muted">Only the things you change are applied. Everything else stays as it is.</p>
+<details class="mb-4">
+  <summary>Show the selected items</summary>
+  <p class="mt-2 mb-0">{{ items|map(attribute='title')|join(', ') }}</p>
+</details>
+
+<form method="POST" action="{{ url_for('views.bulk_edit') }}">
+  <input type="hidden" name="apply" value="1" />
+  {% for item in items %}<input type="hidden" name="item_ids" value="{{ item.id }}" />{% endfor %}
+
+  <div class="form-group">
+    <label for="category">Category</label>
+    <select class="form-control" id="category" name="category">
+      <option value="">Keep the current categories</option>
+      {% for category in categories %}
+        <option value="{{ category.id }}" {% if values.category|string == category.id|string %}selected{% endif %}>{{ category.name }}</option>
+      {% endfor %}
+      <option value="__new__" {% if values.category == '__new__' %}selected{% endif %}>+ New category...</option>
+    </select>
+    <input type="text" class="form-control mt-2 {{ '' if values.category == '__new__' else 'd-none' }}"
+           id="new-category" name="new_category" maxlength="100"
+           placeholder="Name of the new category" value="{{ values.new_category }}" />
+  </div>
+
+  <div class="form-group">
+    <label for="status">Status</label>
+    <select class="form-control" id="status" name="status">
+      <option value="">Keep the current statuses</option>
+      {% for value, label in statuses %}
+        <option value="{{ value }}" {% if values.status == value %}selected{% endif %}>{{ label }}</option>
+      {% endfor %}
+    </select>
+  </div>
+
+  <div id="completed-fields" class="form-row">
+    <div class="form-group col-sm-6">
+      <label for="completed_month">Month <span class="text-muted">(optional)</span></label>
+      <select class="form-control" id="completed_month" name="completed_month">
+        <option value="">No month</option>
+        {% for name in months %}
+          <option value="{{ loop.index }}" {% if values.month|string == loop.index|string %}selected{% endif %}>{{ name }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="form-group col-sm-6">
+      <label for="completed_year">Year <span class="text-muted">(optional)</span></label>
+      <input type="number" class="form-control" id="completed_year" name="completed_year"
+             min="1900" max="2100" placeholder="e.g. 2026" value="{{ values.year }}" />
+    </div>
+  </div>
+
+  <div class="form-group">
+    <label for="country">Country flag</label>
+    <select class="form-control" id="country" name="country">
+      <option value="">Keep the current flags</option>
+      <option value="__none__" {% if values.country == '__none__' %}selected{% endif %}>Remove the flag</option>
+      {% for label, places in country_groups %}
+        <optgroup label="{{ label }}">
+          {% for code, name in places %}
+            <option value="{{ code }}" {% if values.country == code %}selected{% endif %}>{{ name }}</option>
+          {% endfor %}
+        </optgroup>
+      {% endfor %}
+    </select>
+    <small class="form-text text-muted">The chosen flag is set on every selected item.</small>
+  </div>
+
+  <button type="submit" class="btn btn-primary">Apply to {{ items|length }} item{{ '' if items|length == 1 else 's' }}</button>
+  <a href="{{ back_url }}" class="btn btn-outline-secondary">Cancel</a>
+</form>
+{% endblock %}

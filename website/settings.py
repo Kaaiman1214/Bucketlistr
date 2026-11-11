@@ -5,6 +5,7 @@ from werkzeug.security import generate_password_hash, check_password_hash
 from . import db
 from .auth import SPECIAL_CHARS
 from .models import Setting, ordered_categories
+from .security import password_limiter, wait_message
 
 settings = Blueprint('settings', __name__)
 
@@ -67,7 +68,11 @@ def change_password():
     new_password = request.form.get('new_password', '')
     confirm = request.form.get('confirm_password', '')
 
-    if not check_password_hash(current_user.password, current):
+    wait = password_limiter.retry_after(current_user.id)
+    if wait:
+        flash(wait_message(wait), category='error')
+    elif not check_password_hash(current_user.password, current):
+        password_limiter.record(current_user.id)
         flash('Your current password is not correct.', category='error')
     elif new_password != confirm:
         flash('The new passwords don\'t match.', category='error')
@@ -76,6 +81,7 @@ def change_password():
     elif not any(char in new_password for char in SPECIAL_CHARS):
         flash('Password must contain at least one special character', category='error')
     else:
+        password_limiter.reset(current_user.id)
         current_user.password = generate_password_hash(new_password)
         db.session.commit()
         flash('Your password has been changed.', category='success')

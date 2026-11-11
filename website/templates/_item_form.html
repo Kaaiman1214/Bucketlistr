@@ -26,11 +26,30 @@
 </div>
 {% endmacro %}
 <form method="POST">
+  {% if not editing %}
   <div class="form-group">
+    <div class="custom-control custom-checkbox">
+      <input type="checkbox" class="custom-control-input" id="bulk-mode" name="bulk"
+             {% if values.bulk %}checked{% endif %} />
+      <label class="custom-control-label" for="bulk-mode">Add several items at once</label>
+    </div>
+  </div>
+  {% endif %}
+
+  <div class="form-group single-only{{ ' d-none' if values.bulk }}">
     <label for="title">Title</label>
     <input type="text" class="form-control" id="title" name="title" maxlength="200"
            value="{{ values.title }}" required />
   </div>
+
+  {% if not editing %}
+  <div class="form-group bulk-only{{ '' if values.bulk else ' d-none' }}">
+    <label for="titles">Items</label>
+    <textarea class="form-control" id="titles" name="titles" rows="10"
+              placeholder="One item per line">{{ values.titles }}</textarea>
+    <small class="form-text text-muted">Type or paste one title per line. Empty lines and repeated titles are ignored. All items get the same category, status and flag. You can add a description, photos and a checklist to each item afterwards.</small>
+  </div>
+  {% endif %}
 
   <div class="form-group">
     <label for="category">Category</label>
@@ -52,14 +71,14 @@
     {% endif %}
   </div>
 
-  <div class="form-group">
+  <div class="form-group single-only{{ ' d-none' if values.bulk }}">
     <label for="photos">Photos <span class="text-muted">(optional)</span></label>
     <div id="photo-list" class="d-flex flex-wrap">
       {% for slot in values.photo_slots %}
         {% if slot.id %}
-          {{ photo_card(slot.id, url_for('views.photo', photo_id=slot.id), slot.id) }}
+          {{ photo_card(slot.id, url_for('views.photo', photo_id=slot.id, size='thumb'), slot.id) }}
         {% else %}
-          {{ photo_card('new:' ~ slot.name, url_for('views.pending_photo', name=slot.name), '') }}
+          {{ photo_card('new:' ~ slot.name, url_for('views.pending_photo', name=slot.name, size='thumb'), '') }}
         {% endif %}
       {% endfor %}
     </div>
@@ -73,7 +92,7 @@
     <small id="photo-status" class="form-text text-muted">Photos upload as soon as you select them and become part of the item when you save. Use the arrows to change the order; the first photo is the preview on the homepage.</small>
   </div>
 
-  <div class="form-group">
+  <div class="form-group single-only{{ ' d-none' if values.bulk }}">
     <label for="description">Description <span class="text-muted">(optional)</span></label>
     <textarea class="form-control" id="description" name="description" rows="6">{{ values.description }}</textarea>
     <small class="form-text text-muted">Items without a description, checklist or photo show as plain tiles that cannot be opened.</small>
@@ -101,7 +120,7 @@
     </select>
   </div>
 
-  <div class="form-group">
+  <div class="form-group single-only{{ ' d-none' if values.bulk }}">
     <div class="custom-control custom-checkbox">
       <input type="checkbox" class="custom-control-input" id="has-checklist" name="has_checklist"
              {% if values.has_checklist %}checked{% endif %} />
@@ -109,7 +128,7 @@
     </div>
   </div>
 
-  <div id="checklist-fields" class="form-group">
+  <div id="checklist-fields" class="form-group single-only{{ ' d-none' if values.bulk }}">
     <small class="form-text text-muted mb-2">Type an entry and a new empty one appears below it. Tick the box in front of an entry to mark it as done. Clear an entry's text to remove it. Unchecking Checklist and saving deletes the whole checklist.</small>
     <div id="checklist-rows">
       {% for entry in values.entries %}{{ checklist_row(entry.key, entry.text, entry.done) }}{% endfor %}
@@ -144,6 +163,6 @@
     </div>
   </div>
 
-  <button type="submit" class="btn btn-primary">{{ 'Save changes' if editing else 'Add item' }}</button>
+  <button type="submit" id="save-button" class="btn btn-primary">{{ 'Save changes' if editing else ('Add items' if values.bulk else 'Add item') }}</button>
   <a href="{{ back_url }}" class="btn btn-outline-secondary">Cancel</a>
 </form>
