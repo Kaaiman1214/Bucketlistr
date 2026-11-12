@@ -82,10 +82,13 @@ def create_app():
     def load_user(id):
         return User.query.get(int(id))
 
+    from .catalog import author_mode
+
     @app.context_processor
     def inject_layout():
         return {'site_name': get_site_name(),
-                'sidebar_categories': get_sidebar_categories()}
+                'sidebar_categories': get_sidebar_categories(),
+                'template_author': author_mode()}
 
     return app
 

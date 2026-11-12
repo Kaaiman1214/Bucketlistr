@@ -36,6 +36,7 @@ class BucketItem(db.Model):
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'))
     category_id = db.Column(db.Integer, db.ForeignKey('category.id'))
     country_code = db.Column(db.String(32))
+    template_id = db.Column(db.String(64))
     checklist = db.relationship('ChecklistEntry', cascade='all, delete-orphan',
                                 order_by='ChecklistEntry.id')
     photos = db.relationship('Photo', cascade='all, delete-orphan', order_by='Photo.id')

@@ -83,5 +83,8 @@
 
 {% if user.is_authenticated %}
   <a class="btn btn-primary" href="{{ url_for('views.edit_item', item_id=item.id) }}">Edit item</a>
+  {% if template_author %}
+    <a class="btn btn-outline-secondary ml-2" href="{{ url_for('views.template_new', from_item=item.id) }}">Save as template</a>
+  {% endif %}
 {% endif %}
 {% endblock %}

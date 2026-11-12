@@ -594,3 +594,92 @@ document.addEventListener('DOMContentLoaded', function () {
     box.addEventListener('change', toggle);
     toggle();
 });
+
+document.addEventListener('DOMContentLoaded', function () {
+    var form = document.getElementById('template-form');
+    var toggle = document.getElementById('template-select-toggle');
+    if (!form || !toggle) return;
+
+    var count = document.getElementById('template-count');
+    var addButton = document.getElementById('template-add-selected');
+    var selectAll = document.getElementById('template-all');
+
+    function boxes() {
+        return Array.prototype.slice.call(form.querySelectorAll('.tile-select'));
+    }
+
+    function update() {
+        var checked = 0;
+        boxes().forEach(function (box) {
+            var tile = box.closest('.tile');
+            if (tile) tile.classList.toggle('selected', box.checked);
+            if (box.checked) checked += 1;
+        });
+        Array.prototype.forEach.call(form.querySelectorAll('.category-select'), function (box) {
+            var tiles = box.closest('section').querySelectorAll('.tile-select');
+            var ticked = Array.prototype.filter.call(tiles, function (tile) { return tile.checked; }).length;
+            box.disabled = tiles.length === 0;
+            box.checked = tiles.length > 0 && ticked === tiles.length;
+            box.indeterminate = ticked > 0 && ticked < tiles.length;
+        });
+        count.textContent = checked + ' selected';
+        addButton.disabled = checked === 0;
+        selectAll.textContent = checked > 0 && checked === boxes().length ? 'Unselect all' : 'Select all';
+        return checked;
+    }
+
+    function setSelecting(on) {
+        form.classList.toggle('selecting', on);
+        toggle.textContent = on ? 'Stop selecting' : 'Select';
+        if (!on) {
+            boxes().forEach(function (box) { box.checked = false; });
+        }
+        update();
+    }
+
+    toggle.addEventListener('click', function () {
+        setSelecting(!form.classList.contains('selecting'));
+    });
+
+    form.addEventListener('click', function (event) {
+        if (!form.classList.contains('selecting')) return;
+        var tile = event.target.closest('.tile');
+        if (!tile || event.target.closest('summary, details, a, .tile-select')) return;
+        var box = tile.querySelector('.tile-select');
+        if (box) {
+            box.checked = !box.checked;
+            update();
+        }
+    });
+
+    form.addEventListener('change', function (event) {
+        var target = event.target;
+        if (target.classList.contains('category-select')) {
+            Array.prototype.forEach.call(target.closest('section').querySelectorAll('.tile-select'), function (tile) {
+                tile.checked = target.checked;
+            });
+            update();
+        } else if (target.classList.contains('tile-select')) {
+            update();
+        }
+    });
+
+    selectAll.addEventListener('click', function () {
+        var everything = boxes();
+        var allSelected = everything.length > 0 && everything.every(function (box) { return box.checked; });
+        everything.forEach(function (box) { box.checked = !allSelected; });
+        update();
+    });
+
+    document.getElementById('template-cancel').addEventListener('click', function () {
+        setSelecting(false);
+    });
+
+    form.addEventListener('submit', function (event) {
+        if (event.submitter && event.submitter.id === 'template-add-selected' && update() === 0) {
+            event.preventDefault();
+        }
+    });
+
+    update();
+});

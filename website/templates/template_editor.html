@@ -1,0 +1,75 @@
+{% extends "base.html" %}
+{% block title %}{{ 'Edit template' if editing else 'New template' }}{% endblock %}
+{% block body_class %}no-sidebar{% endblock %}
+{% block content %}
+<p class="mt-4"><a href="{{ url_for('views.template_catalog') }}">&larr; Back to the templates</a></p>
+<h1 class="mb-3">{{ 'Edit template' if editing else 'New template' }}</h1>
+<div class="alert alert-info">Author mode: saving writes a file in <code>website/catalog/</code>. Commit that file to share the template with everyone who installs the app.</div>
+
+<form method="POST">
+  <div class="form-group">
+    <label for="title">Title</label>
+    <input type="text" class="form-control" id="title" name="title" maxlength="200"
+           value="{{ values.title }}" required />
+  </div>
+
+  <div class="form-group">
+    <label for="category">Category</label>
+    <input type="text" class="form-control" id="category" name="category" maxlength="100"
+           list="category-names" value="{{ values.category }}" required />
+    <datalist id="category-names">
+      {% for name in category_names %}<option value="{{ name }}">{% endfor %}
+    </datalist>
+    <small class="form-text text-muted">Templates are grouped by category. If the person already has a category with this name, the item goes there.</small>
+  </div>
+
+  <div class="form-group">
+    <label for="description">Description <span class="text-muted">(optional)</span></label>
+    <textarea class="form-control" id="description" name="description" rows="4">{{ values.description }}</textarea>
+  </div>
+
+  <div class="form-group">
+    <label for="country">Country flag <span class="text-muted">(optional)</span></label>
+    <select class="form-control" id="country" name="country">
+      <option value="">No flag</option>
+      {% for label, places in country_groups %}
+        <optgroup label="{{ label }}">
+          {% for code, name in places %}
+            <option value="{{ code }}" {% if values.country == code %}selected{% endif %}>{{ name }}</option>
+          {% endfor %}
+        </optgroup>
+      {% endfor %}
+    </select>
+  </div>
+
+  <div class="form-group">
+    <label for="checklist">Checklist <span class="text-muted">(optional)</span></label>
+    <textarea class="form-control" id="checklist" name="checklist" rows="6"
+              placeholder="One entry per line">{{ values.checklist }}</textarea>
+  </div>
+
+  <div class="form-group">
+    <label for="id">Template id</label>
+    {% if editing %}
+      <input type="text" class="form-control" id="id" value="{{ values.id }}" readonly />
+      <small class="form-text text-muted">This is the file name and cannot be changed. It is how the app remembers which templates a person already added.</small>
+    {% else %}
+      <input type="text" class="form-control" id="id" name="id" maxlength="63"
+             pattern="[a-z0-9][a-z0-9\-]*" placeholder="Leave empty to create it from the title"
+             value="{{ values.id }}" />
+      <small class="form-text text-muted">Lowercase letters, digits and hyphens. It becomes the file name and cannot be changed later.</small>
+    {% endif %}
+  </div>
+
+  <button type="submit" class="btn btn-primary">Save template</button>
+  <a href="{{ url_for('views.template_catalog') }}" class="btn btn-outline-secondary">Cancel</a>
+</form>
+
+{% if editing %}
+<hr class="my-4" />
+<form method="POST" action="{{ url_for('views.template_delete', template_id=values.id) }}"
+      onsubmit="return confirm('Delete this template? This removes its file.');">
+  <button type="submit" class="btn btn-outline-danger">Delete template</button>
+</form>
+{% endif %}
+{% endblock %}

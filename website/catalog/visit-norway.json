@@ -1,0 +1,13 @@
+{
+  "id": "visit-norway",
+  "title": "Visit Norway",
+  "category": "Locations",
+  "description": "Fjords, mountains and the long coastline.",
+  "country": "no",
+  "checklist": [
+    "Oslo",
+    "Bergen",
+    "Tromsø",
+    "Lofoten"
+  ]
+}

@@ -1,0 +1,43 @@
+{% extends "base.html" %}
+{% block title %}Add from templates{% endblock %}
+{% from "_template_tile.html" import template_tile with context %}
+{% block content %}
+<h1 class="text-center my-4">Add from templates</h1>
+<p class="text-center text-muted">Ready-made items to add to your list. Click + to add one, or use Select to add several at once.</p>
+
+{% if template_author %}
+  <div class="alert alert-info">Author mode is on: you can create and edit templates here. They are saved as files in <code>website/catalog/</code>.</div>
+{% endif %}
+
+<div class="text-center mb-4">
+  {% if sections %}<button type="button" class="btn btn-outline-secondary" id="template-select-toggle">Select</button>{% endif %}
+  {% if template_author %}<a class="btn btn-outline-primary" href="{{ url_for('views.template_new') }}">+ New template</a>{% endif %}
+</div>
+
+{% if not sections %}
+  <p class="text-center text-muted">There are no templates yet.</p>
+{% else %}
+
+<form method="POST" id="template-form" action="{{ url_for('views.template_add') }}">
+  {% for section in sections %}
+  <section class="mb-4">
+    <h4 class="section-heading">
+      <input type="checkbox" class="category-select" aria-label="Select all templates in {{ section.name }}">
+      <span class="section-title">{{ section.name }}</span>
+      <span class="badge badge-secondary ml-1">{{ section.templates|length }}</span>
+    </h4>
+    <div class="row pt-2">
+      {% for t in section.templates %}{{ template_tile(t) }}{% endfor %}
+    </div>
+  </section>
+  {% endfor %}
+
+  <div class="bulk-bar" id="template-bar">
+    <span id="template-count">0 selected</span>
+    <button type="button" class="btn btn-sm btn-outline-light" id="template-all">Select all</button>
+    <button type="submit" class="btn btn-sm btn-success" id="template-add-selected" disabled><i class="fa fa-plus"></i> Add selected</button>
+    <button type="button" class="btn btn-sm btn-outline-light" id="template-cancel">Cancel</button>
+  </div>
+</form>
+{% endif %}
+{% endblock %}

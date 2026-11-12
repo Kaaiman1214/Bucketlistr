@@ -73,7 +73,16 @@
       .selecting .tile-select { display: block; }
       .category-select { display: none; width: 1.2rem; height: 1.2rem; margin-right: 0.6rem; vertical-align: middle; }
       .selecting .category-select { display: inline-block; }
-      .selecting .tile-edit { display: none; }
+      .selecting .tile-edit, .selecting .tile-add { display: none; }
+      .selecting .tile.tile-added { cursor: default; }
+      .selecting .tile.tile-added .card-body { padding-left: 1rem; }
+      .tile-add { position: absolute; top: 0.6rem; right: 0.8rem; z-index: 2; width: 1.9rem; height: 1.9rem; padding: 0; border: 0; border-radius: 50%; background: #28a745; color: #fff; line-height: 1.9rem; text-align: center; cursor: pointer; }
+      .tile-add:hover { background: #218838; }
+      .tile-author { right: 3.1rem; }
+      .tile-added-mark { position: absolute; top: 0.6rem; right: 0.8rem; z-index: 2; width: 1.9rem; height: 1.9rem; border-radius: 50%; background: #e9ecef; color: #28a745; line-height: 1.9rem; text-align: center; }
+      .tile.tile-added { opacity: 0.7; }
+      .section-title { font-size: 1.5rem; font-weight: 700; }
+      .clamp { display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
       .selecting .tile { cursor: pointer; }
       .selecting .tile .card-body { padding-left: 2.6rem; }
       .tile.selected { box-shadow: 0 0 0 2px #dc3545; }
@@ -164,6 +173,7 @@
             <div class="dropdown-menu dropdown-menu-right" aria-labelledby="account-menu">
               <a class="dropdown-item" href="{{ url_for('settings.settings_page') }}">Settings</a>
               <a class="dropdown-item" href="{{ url_for('views.new_item') }}">+ Add item</a>
+              <a class="dropdown-item" href="{{ url_for('views.template_catalog') }}">+ Add from templates</a>
               <a class="dropdown-item" href="{{ url_for('views.home', select=1) }}">Select items</a>
               <div class="dropdown-divider"></div>
               <a class="dropdown-item text-danger" href="{{ url_for('auth.logout') }}">Logout</a>

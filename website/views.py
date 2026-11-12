@@ -8,6 +8,8 @@ from flask_login import login_required, current_user
 from sqlalchemy.orm import selectinload
 
 from . import db, IMAGE_DIR, PENDING_DIR
+from .catalog import (author_mode, clean_template, delete_template, get_template, load_catalog,
+                      write_template)
 from .countries import COUNTRIES, COUNTRY_GROUPS, flag_url
 from .models import (BucketItem, Category, ChecklistEntry, Photo, User, MONTH_NAMES,
                      STATUS_CHOICES, next_category_position, ordered_categories)
@@ -468,6 +470,189 @@ def country(code):
     return render_template("country.html", user=current_user, name=COUNTRIES[code],
                            flag=flag_url(code), items=items,
                            done=sum(1 for item in items if item.completed))
+
+
+def catalog_sections():
+    added = {item.template_id for item in
+             BucketItem.query.filter(BucketItem.template_id.isnot(None)).all()}
+    grouped = {}
+    for template in load_catalog():
+        entry = dict(template, added=template['id'] in added,
+                     flag_url=flag_url(template['country']) if template['country'] else None,
+                     country_name=COUNTRIES.get(template['country']))
+        key = fold(template['category'])
+        grouped.setdefault(key, {'name': template['category'], 'templates': []})
+        grouped[key]['templates'].append(entry)
+    sections = []
+    for key in sorted(grouped):
+        section = grouped[key]
+        section['templates'].sort(key=lambda entry: fold(entry['title']))
+        sections.append(section)
+    return sections
+
+
+@views.route('/templates')
+@login_required
+def template_catalog():
+    return render_template("template_catalog.html", user=current_user,
+                           sections=catalog_sections())
+
+
+@views.route('/templates/add', methods=['POST'])
+@login_required
+def template_add():
+    wanted = []
+    for template_id in request.form.getlist('template_ids'):
+        if template_id not in wanted:
+            wanted.append(template_id)
+    if not wanted:
+        flash('No templates were selected.', category='error')
+        return redirect(url_for('views.template_catalog'))
+
+    catalog = {template['id']: template for template in load_catalog()}
+    existing = {item.template_id for item in
+                BucketItem.query.filter(BucketItem.template_id.isnot(None)).all()}
+    added = 0
+    for template_id in wanted:
+        template = catalog.get(template_id)
+        if template is None or template_id in existing:
+            continue
+        category = find_category(template['category'])
+        if category is None:
+            category = Category(name=template['category'], position=next_category_position())
+            db.session.add(category)
+        item = BucketItem(user_id=current_user.id, title=template['title'],
+                          description=template['description'] or None, category=category,
+                          country_code=template['country'] or None, template_id=template_id)
+        for entry in template['checklist']:
+            item.checklist.append(ChecklistEntry(text=entry))
+        db.session.add(item)
+        added += 1
+
+    if not added:
+        flash('Those templates are already on your list.', category='error')
+    else:
+        db.session.commit()
+        message = f"Added {added} item{'' if added == 1 else 's'} to your list."
+        skipped = len(wanted) - added
+        if skipped:
+            message += f' {skipped} {"was" if skipped == 1 else "were"} already there.'
+        flash(message, category='success')
+    return redirect(url_for('views.template_catalog'))
+
+
+def require_author():
+    if not author_mode():
+        abort(404)
+
+
+def slugify(text):
+    slug = re.sub(r'[^a-z0-9]+', '-', fold(text)).strip('-')
+    return slug[:63].strip('-')
+
+
+def template_form_values(source=None):
+    values = {'id': '', 'title': '', 'category': '', 'description': '', 'country': '',
+              'checklist': ''}
+    if source:
+        values.update(id=source['id'], title=source['title'], category=source['category'],
+                      description=source['description'], country=source['country'],
+                      checklist='\n'.join(source['checklist']))
+    return values
+
+
+def read_template_form(form):
+    return {key: form.get(key, '').strip() if key != 'checklist' else form.get(key, '')
+            for key in ('id', 'title', 'category', 'description', 'country', 'checklist')}
+
+
+def build_template(values):
+    template_id = values['id'] or slugify(values['title'])
+    if not template_id:
+        return None, 'Give the template a title.'
+    return clean_template({
+        'id': template_id,
+        'title': values['title'],
+        'category': values['category'],
+        'description': values['description'],
+        'country': values['country'],
+        'checklist': values['checklist'].splitlines(),
+    })
+
+
+def template_editor_context():
+    names = {}
+    for category in ordered_categories():
+        names.setdefault(fold(category.name), category.name)
+    for template in load_catalog():
+        names.setdefault(fold(template['category']), template['category'])
+    return {'category_names': sorted(names.values(), key=fold), 'country_groups': COUNTRY_GROUPS}
+
+
+@views.route('/templates/new', methods=['GET', 'POST'])
+@login_required
+def template_new():
+    require_author()
+    values = template_form_values()
+    from_item = request.args.get('from_item', type=int)
+    if request.method == 'GET' and from_item:
+        item = get_owned_item(from_item)
+        values = template_form_values({
+            'id': '', 'title': item.title,
+            'category': item.category.name if item.category else '',
+            'description': item.description or '', 'country': item.country_code or '',
+            'checklist': [entry.text for entry in item.checklist],
+        })
+
+    if request.method == 'POST':
+        values = read_template_form(request.form)
+        template, error = build_template(values)
+        if error is None and get_template(template['id']) is not None:
+            error = 'A template with this id already exists. Edit that one instead.'
+        if error:
+            flash(error, category='error')
+        else:
+            write_template(template)
+            flash(f"Saved template \"{template['title']}\".", category='success')
+            return redirect(url_for('views.template_catalog'))
+
+    return render_template("template_editor.html", user=current_user, values=values,
+                           editing=False, **template_editor_context())
+
+
+@views.route('/templates/<template_id>/edit', methods=['GET', 'POST'])
+@login_required
+def template_edit(template_id):
+    require_author()
+    template = get_template(template_id)
+    if template is None:
+        abort(404)
+    values = template_form_values(template)
+
+    if request.method == 'POST':
+        values = read_template_form(request.form)
+        values['id'] = template_id
+        updated, error = build_template(values)
+        if error:
+            flash(error, category='error')
+        else:
+            write_template(updated)
+            flash(f"Saved template \"{updated['title']}\".", category='success')
+            return redirect(url_for('views.template_catalog'))
+
+    return render_template("template_editor.html", user=current_user, values=values,
+                           editing=True, **template_editor_context())
+
+
+@views.route('/templates/<template_id>/delete', methods=['POST'])
+@login_required
+def template_delete(template_id):
+    require_author()
+    if get_template(template_id) is None:
+        abort(404)
+    delete_template(template_id)
+    flash('Template deleted.', category='success')
+    return redirect(url_for('views.template_catalog'))
 
 
 @views.route('/new', methods=['GET', 'POST'])
