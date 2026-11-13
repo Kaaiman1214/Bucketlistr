@@ -474,7 +474,8 @@ def country(code):
 
 def catalog_sections():
     added = {item.template_id for item in
-             BucketItem.query.filter(BucketItem.template_id.isnot(None)).all()}
+             BucketItem.query.filter(BucketItem.template_id.isnot(None),
+                                     BucketItem.user_id == current_user.id).all()}
     grouped = {}
     for template in load_catalog():
         entry = dict(template, added=template['id'] in added,
@@ -483,11 +484,27 @@ def catalog_sections():
         key = fold(template['category'])
         grouped.setdefault(key, {'name': template['category'], 'templates': []})
         grouped[key]['templates'].append(entry)
+    user_order = {}
+    user_names = {}
+    for index, category in enumerate(ordered_categories()):
+        user_order[fold(category.name)] = index
+        user_names[fold(category.name)] = category.name
     sections = []
-    for key in sorted(grouped):
+    for key in sorted(grouped, key=lambda key: (key not in user_order, user_order.get(key, 0), key)):
         section = grouped[key]
+        section['name'] = user_names.get(key, section['name'])
         section['templates'].sort(key=lambda entry: fold(entry['title']))
         sections.append(section)
+    used = set()
+    for section in sections:
+        base = 't-' + (re.sub(r'[^a-z0-9]+', '-', fold(section['name'])).strip('-') or 'category')
+        key = base
+        count = 2
+        while key in used:
+            key = f'{base}-{count}'
+            count += 1
+        used.add(key)
+        section['key'] = key
     return sections
 
 
@@ -511,7 +528,8 @@ def template_add():
 
     catalog = {template['id']: template for template in load_catalog()}
     existing = {item.template_id for item in
-                BucketItem.query.filter(BucketItem.template_id.isnot(None)).all()}
+                BucketItem.query.filter(BucketItem.template_id.isnot(None),
+                                        BucketItem.user_id == current_user.id).all()}
     added = 0
     for template_id in wanted:
         template = catalog.get(template_id)
@@ -652,6 +670,35 @@ def template_delete(template_id):
         abort(404)
     delete_template(template_id)
     flash('Template deleted.', category='success')
+    return redirect(url_for('views.template_catalog'))
+
+
+@views.route('/templates/remove', methods=['POST'])
+@login_required
+def template_remove():
+    ids = []
+    for template_id in request.form.getlist('template_ids'):
+        if template_id not in ids:
+            ids.append(template_id)
+    if not ids:
+        flash('No templates were selected.', category='error')
+        return redirect(url_for('views.template_catalog'))
+
+    items = BucketItem.query.filter(BucketItem.template_id.in_(ids),
+                                    BucketItem.user_id == current_user.id).all()
+    if not items:
+        flash('None of those are on your list.', category='error')
+        return redirect(url_for('views.template_catalog'))
+
+    stale = []
+    for item in items:
+        stale.extend(photo.filename for photo in item.photos)
+        db.session.delete(item)
+    prune_empty_categories()
+    db.session.commit()
+    delete_image_files(stale)
+    flash(f"Removed {len(items)} item{'' if len(items) == 1 else 's'} from your list.",
+          category='success')
     return redirect(url_for('views.template_catalog'))
 
 

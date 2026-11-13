@@ -602,6 +602,9 @@ document.addEventListener('DOMContentLoaded', function () {
 
     var count = document.getElementById('template-count');
     var addButton = document.getElementById('template-add-selected');
+    var removeButton = document.getElementById('template-remove-selected');
+    var addCount = document.getElementById('template-add-count');
+    var removeCount = document.getElementById('template-remove-count');
     var selectAll = document.getElementById('template-all');
 
     function boxes() {
@@ -610,10 +613,19 @@ document.addEventListener('DOMContentLoaded', function () {
 
     function update() {
         var checked = 0;
+        var addable = 0;
+        var removable = 0;
         boxes().forEach(function (box) {
             var tile = box.closest('.tile');
             if (tile) tile.classList.toggle('selected', box.checked);
-            if (box.checked) checked += 1;
+            if (box.checked) {
+                checked += 1;
+                if (box.getAttribute('data-added') === '1') {
+                    removable += 1;
+                } else {
+                    addable += 1;
+                }
+            }
         });
         Array.prototype.forEach.call(form.querySelectorAll('.category-select'), function (box) {
             var tiles = box.closest('section').querySelectorAll('.tile-select');
@@ -623,9 +635,12 @@ document.addEventListener('DOMContentLoaded', function () {
             box.indeterminate = ticked > 0 && ticked < tiles.length;
         });
         count.textContent = checked + ' selected';
-        addButton.disabled = checked === 0;
+        addButton.disabled = addable === 0;
+        removeButton.disabled = removable === 0;
+        addCount.textContent = addable ? '(' + addable + ')' : '';
+        removeCount.textContent = removable ? '(' + removable + ')' : '';
         selectAll.textContent = checked > 0 && checked === boxes().length ? 'Unselect all' : 'Select all';
-        return checked;
+        return { checked: checked, addable: addable, removable: removable };
     }
 
     function setSelecting(on) {
@@ -676,8 +691,21 @@ document.addEventListener('DOMContentLoaded', function () {
     });
 
     form.addEventListener('submit', function (event) {
-        if (event.submitter && event.submitter.id === 'template-add-selected' && update() === 0) {
+        var submitter = event.submitter;
+        if (!submitter) return;
+        if (submitter.classList.contains('tile-remove')) {
+            var question = 'Remove "' + submitter.getAttribute('data-title') + '" from your list? Its progress, photos and notes are deleted.';
+            if (!window.confirm(question)) event.preventDefault();
+            return;
+        }
+        var state = update();
+        if (submitter.id === 'template-add-selected' && state.addable === 0) {
             event.preventDefault();
+        } else if (submitter.id === 'template-remove-selected') {
+            var many = state.removable + ' item' + (state.removable === 1 ? '' : 's');
+            if (!state.removable || !window.confirm('Remove ' + many + ' from your list? Their progress, photos and notes are deleted.')) {
+                event.preventDefault();
+            }
         }
     });
 

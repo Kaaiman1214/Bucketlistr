@@ -1,14 +1,13 @@
 {% macro template_tile(t) %}
 <div class="col-sm-6 col-lg-4 mb-3">
   <div class="card tile {{ 'tile-added' if t.added }}">
-    {% if not t.added %}
-      <input type="checkbox" class="tile-select" name="template_ids" value="{{ t.id }}" aria-label="Select {{ t.title }}">
-    {% endif %}
+    <input type="checkbox" class="tile-select" name="template_ids" value="{{ t.id }}" data-added="{{ '1' if t.added else '0' }}" aria-label="Select {{ t.title }}">
     <div class="card-body pr-5">
       <h5 class="card-title">
         {% if t.flag_url %}<img class="flag" src="{{ t.flag_url }}" alt="" title="{{ t.country_name }}" loading="lazy" onerror="this.style.display='none'">{% endif %}
         <span class="text-dark">{{ t.title }}</span>
       </h5>
+      {% if t.added %}<p class="card-text text-success small mb-1"><i class="fa fa-check"></i> On your list</p>{% endif %}
       {% if t.description %}<p class="card-text text-muted small mb-1 clamp">{{ t.description }}</p>{% endif %}
       {% if t.checklist %}
         <details class="small">
@@ -21,7 +20,7 @@
       <a class="tile-edit tile-author" href="{{ url_for('views.template_edit', template_id=t.id) }}" title="Edit template" aria-label="Edit template {{ t.title }}"><i class="fa fa-pencil"></i></a>
     {% endif %}
     {% if t.added %}
-      <span class="tile-added-mark" title="Already on your list"><i class="fa fa-check"></i></span>
+      <button type="submit" formaction="{{ url_for('views.template_remove') }}" name="template_ids" value="{{ t.id }}" class="tile-remove" data-title="{{ t.title }}" title="Remove from my list" aria-label="Remove {{ t.title }} from my list"><i class="fa fa-minus"></i></button>
     {% else %}
       <button type="submit" name="template_ids" value="{{ t.id }}" class="tile-add" title="Add to my list" aria-label="Add {{ t.title }} to my list"><i class="fa fa-plus"></i></button>
     {% endif %}
