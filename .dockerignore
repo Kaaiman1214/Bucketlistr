@@ -2,6 +2,7 @@
 .github
 .gitignore
 .dockerignore
+.template-author
 Dockerfile
 docker-compose.yml
 README.md

@@ -67,13 +67,21 @@
       .settings-card { border: 1px solid #e9ecef; border-radius: 0.5rem; box-shadow: 0 1px 2px rgba(16, 24, 40, 0.06); }
       .drag-handle { padding: 0.25rem 0.5rem; color: #6c757d; cursor: grab; touch-action: none; user-select: none; }
       .drag-handle:hover, .drag-handle:focus { color: #212529; outline: 0; }
-      .category-row.dragging { position: relative; z-index: 1; background: #f1f4f8; box-shadow: 0 0.25rem 0.75rem rgba(0, 0, 0, 0.15); }
+      .category-row.dragging, .reorder-row.dragging { position: relative; z-index: 1; background: #f1f4f8; box-shadow: 0 0.25rem 0.75rem rgba(0, 0, 0, 0.15); }
       body.is-dragging, body.is-dragging * { cursor: grabbing !important; user-select: none; }
       .tile-select { display: none; position: absolute; top: 0.7rem; left: 0.8rem; z-index: 3; width: 1.25rem; height: 1.25rem; }
       .selecting .tile-select { display: block; }
       .category-select { display: none; width: 1.2rem; height: 1.2rem; margin-right: 0.6rem; vertical-align: middle; }
       .selecting .category-select { display: inline-block; }
-      .selecting .tile-edit { display: none; }
+      .selecting .tile-edit, .selecting .tile-add, .selecting .tile-remove, .selecting .tile-trash { display: none; }
+      .tile-add { position: absolute; top: 0.6rem; right: 0.8rem; z-index: 2; width: 1.9rem; height: 1.9rem; padding: 0; border: 0; border-radius: 50%; background: #28a745; color: #fff; line-height: 1.9rem; text-align: center; cursor: pointer; }
+      .tile-add:hover { background: #218838; }
+      .tile-remove { position: absolute; top: 0.6rem; right: 0.8rem; z-index: 2; width: 1.9rem; height: 1.9rem; padding: 0; border: 1px solid #dc3545; border-radius: 50%; background: #fff; color: #dc3545; line-height: 1.7rem; text-align: center; cursor: pointer; }
+      .tile-remove:hover { background: #dc3545; color: #fff; }
+      .tile-author { right: 3.1rem; }
+      .tile-trash { position: absolute; top: 0.6rem; right: 5.4rem; z-index: 2; width: 1.9rem; height: 1.9rem; padding: 0; border: 1px solid #dc3545; border-radius: 50%; background: #fff; color: #dc3545; line-height: 1.7rem; text-align: center; cursor: pointer; }
+      .tile-trash:hover { background: #dc3545; color: #fff; }
+      .clamp { display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
       .selecting .tile { cursor: pointer; }
       .selecting .tile .card-body { padding-left: 2.6rem; }
       .tile.selected { box-shadow: 0 0 0 2px #dc3545; }
@@ -164,6 +172,7 @@
             <div class="dropdown-menu dropdown-menu-right" aria-labelledby="account-menu">
               <a class="dropdown-item" href="{{ url_for('settings.settings_page') }}">Settings</a>
               <a class="dropdown-item" href="{{ url_for('views.new_item') }}">+ Add item</a>
+              <a class="dropdown-item" href="{{ url_for('views.template_catalog') }}">+ Add from templates</a>
               <a class="dropdown-item" href="{{ url_for('views.home', select=1) }}">Select items</a>
               <div class="dropdown-divider"></div>
               <a class="dropdown-item text-danger" href="{{ url_for('auth.logout') }}">Logout</a>

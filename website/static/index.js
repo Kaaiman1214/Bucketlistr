@@ -594,3 +594,247 @@ document.addEventListener('DOMContentLoaded', function () {
     box.addEventListener('change', toggle);
     toggle();
 });
+
+document.addEventListener('DOMContentLoaded', function () {
+    var form = document.getElementById('template-form');
+    var toggle = document.getElementById('template-select-toggle');
+    if (!form || !toggle) return;
+
+    var count = document.getElementById('template-count');
+    var addButton = document.getElementById('template-add-selected');
+    var removeButton = document.getElementById('template-remove-selected');
+    var addCount = document.getElementById('template-add-count');
+    var removeCount = document.getElementById('template-remove-count');
+    var selectAll = document.getElementById('template-all');
+    var deleteButton = document.getElementById('template-delete-selected');
+    var deleteCount = document.getElementById('template-delete-count');
+
+    function boxes() {
+        return Array.prototype.slice.call(form.querySelectorAll('.tile-select'));
+    }
+
+    function update() {
+        var checked = 0;
+        var addable = 0;
+        var removable = 0;
+        boxes().forEach(function (box) {
+            var tile = box.closest('.tile');
+            if (tile) tile.classList.toggle('selected', box.checked);
+            if (box.checked) {
+                checked += 1;
+                if (box.getAttribute('data-added') === '1') {
+                    removable += 1;
+                } else {
+                    addable += 1;
+                }
+            }
+        });
+        Array.prototype.forEach.call(form.querySelectorAll('.category-select'), function (box) {
+            var tiles = box.closest('section').querySelectorAll('.tile-select');
+            var ticked = Array.prototype.filter.call(tiles, function (tile) { return tile.checked; }).length;
+            box.disabled = tiles.length === 0;
+            box.checked = tiles.length > 0 && ticked === tiles.length;
+            box.indeterminate = ticked > 0 && ticked < tiles.length;
+        });
+        count.textContent = checked + ' selected';
+        addButton.disabled = addable === 0;
+        removeButton.disabled = removable === 0;
+        addCount.textContent = addable ? '(' + addable + ')' : '';
+        removeCount.textContent = removable ? '(' + removable + ')' : '';
+        if (deleteButton) {
+            deleteButton.disabled = checked === 0;
+            deleteCount.textContent = checked ? '(' + checked + ')' : '';
+        }
+        selectAll.textContent = checked > 0 && checked === boxes().length ? 'Unselect all' : 'Select all';
+        return { checked: checked, addable: addable, removable: removable };
+    }
+
+    function setSelecting(on) {
+        form.classList.toggle('selecting', on);
+        toggle.textContent = on ? 'Stop selecting' : 'Select';
+        if (!on) {
+            boxes().forEach(function (box) { box.checked = false; });
+        }
+        update();
+    }
+
+    toggle.addEventListener('click', function () {
+        setSelecting(!form.classList.contains('selecting'));
+    });
+
+    form.addEventListener('click', function (event) {
+        if (!form.classList.contains('selecting')) return;
+        var tile = event.target.closest('.tile');
+        if (!tile || event.target.closest('summary, details, a, .tile-select')) return;
+        var box = tile.querySelector('.tile-select');
+        if (box) {
+            box.checked = !box.checked;
+            update();
+        }
+    });
+
+    form.addEventListener('change', function (event) {
+        var target = event.target;
+        if (target.classList.contains('category-select')) {
+            Array.prototype.forEach.call(target.closest('section').querySelectorAll('.tile-select'), function (tile) {
+                tile.checked = target.checked;
+            });
+            update();
+        } else if (target.classList.contains('tile-select')) {
+            update();
+        }
+    });
+
+    selectAll.addEventListener('click', function () {
+        var everything = boxes();
+        var allSelected = everything.length > 0 && everything.every(function (box) { return box.checked; });
+        everything.forEach(function (box) { box.checked = !allSelected; });
+        update();
+    });
+
+    document.getElementById('template-cancel').addEventListener('click', function () {
+        setSelecting(false);
+    });
+
+    form.addEventListener('submit', function (event) {
+        var submitter = event.submitter;
+        if (!submitter) return;
+        if (submitter.classList.contains('tile-remove')) {
+            var question = 'Remove "' + submitter.getAttribute('data-title') + '" from your list? Its progress, photos and notes are deleted.';
+            if (!window.confirm(question)) event.preventDefault();
+            return;
+        }
+        if (submitter.classList.contains('tile-trash')) {
+            var trashQuestion = 'Delete "' + submitter.getAttribute('data-title') + '"? This removes its file.';
+            if (!window.confirm(trashQuestion)) event.preventDefault();
+            return;
+        }
+        var state = update();
+        if (submitter.id === 'template-add-selected' && state.addable === 0) {
+            event.preventDefault();
+        } else if (submitter.id === 'template-remove-selected') {
+            var many = state.removable + ' item' + (state.removable === 1 ? '' : 's');
+            if (!state.removable || !window.confirm('Remove ' + many + ' from your list? Their progress, photos and notes are deleted.')) {
+                event.preventDefault();
+            }
+        } else if (submitter.id === 'template-delete-selected') {
+            var templates = state.checked + ' template' + (state.checked === 1 ? '' : 's');
+            if (!state.checked || !window.confirm('Delete ' + templates + '? This removes their files.')) {
+                event.preventDefault();
+            }
+        }
+    });
+
+    update();
+});
+
+document.addEventListener('DOMContentLoaded', function () {
+    var toggle = document.getElementById('template-reorder-toggle');
+    var panel = document.getElementById('template-reorder');
+    var normal = document.getElementById('template-normal-view');
+    if (!toggle || !panel) return;
+
+    toggle.addEventListener('click', function () {
+        var on = panel.classList.contains('d-none');
+        panel.classList.toggle('d-none', !on);
+        if (normal) normal.classList.toggle('d-none', on);
+        toggle.textContent = on ? 'Done reordering' : 'Reorder';
+    });
+});
+
+document.addEventListener('DOMContentLoaded', function () {
+    var lists = document.querySelectorAll('.reorder-list');
+    Array.prototype.forEach.call(lists, function (list) {
+        var status = list.parentElement.querySelector('.reorder-status');
+        var hint = status ? status.textContent : '';
+        var url = list.getAttribute('data-url');
+        var dragging = null;
+        var changed = false;
+        var timer = null;
+
+        function currentOrder() {
+            return Array.prototype.map.call(list.children, function (row) {
+                return row.getAttribute('data-id');
+            });
+        }
+
+        function save() {
+            if (!status) return;
+            status.className = 'reorder-status form-text text-muted mt-2';
+            status.textContent = 'Saving...';
+            fetch(url, {
+                method: 'POST',
+                credentials: 'same-origin',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ order: currentOrder() })
+            }).then(function (res) {
+                if (!res.ok || res.redirected) throw new Error('not saved');
+                status.textContent = 'Saved.';
+            }).catch(function () {
+                status.className = 'reorder-status form-text text-danger mt-2';
+                status.textContent = 'Could not save the order. Reload the page and try again.';
+            }).then(function () {
+                clearTimeout(timer);
+                timer = setTimeout(function () {
+                    if (status.textContent === 'Saved.') status.textContent = hint;
+                }, 2000);
+            });
+        }
+
+        function onMove(event) {
+            var rows = Array.prototype.slice.call(list.children);
+            for (var i = 0; i < rows.length; i++) {
+                var row = rows[i];
+                if (row === dragging) continue;
+                var box = row.getBoundingClientRect();
+                if (event.clientY > box.top && event.clientY < box.bottom) {
+                    if (i < rows.indexOf(dragging)) {
+                        list.insertBefore(dragging, row);
+                    } else {
+                        list.insertBefore(dragging, row.nextSibling);
+                    }
+                    changed = true;
+                    break;
+                }
+            }
+        }
+
+        function onEnd() {
+            document.removeEventListener('pointermove', onMove);
+            document.removeEventListener('pointerup', onEnd);
+            document.removeEventListener('pointercancel', onEnd);
+            if (dragging) dragging.classList.remove('dragging');
+            document.body.classList.remove('is-dragging');
+            dragging = null;
+            if (changed) save();
+            changed = false;
+        }
+
+        list.addEventListener('pointerdown', function (event) {
+            var handle = event.target.closest('.drag-handle');
+            if (!handle || (event.pointerType === 'mouse' && event.button !== 0)) return;
+            event.preventDefault();
+            dragging = handle.closest('.reorder-row');
+            dragging.classList.add('dragging');
+            document.body.classList.add('is-dragging');
+            document.addEventListener('pointermove', onMove);
+            document.addEventListener('pointerup', onEnd);
+            document.addEventListener('pointercancel', onEnd);
+        });
+
+        list.addEventListener('keydown', function (event) {
+            var handle = event.target.closest('.drag-handle');
+            if (!handle || (event.key !== 'ArrowUp' && event.key !== 'ArrowDown')) return;
+            event.preventDefault();
+            var row = handle.closest('.reorder-row');
+            var up = event.key === 'ArrowUp';
+            var neighbour = up ? row.previousElementSibling : row.nextElementSibling;
+            if (!neighbour) return;
+            list.insertBefore(row, up ? neighbour : neighbour.nextSibling);
+            handle.focus();
+            changed = true;
+            save();
+            changed = false;
+        });
+    });
+});
