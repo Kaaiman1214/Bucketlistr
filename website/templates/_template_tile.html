@@ -19,6 +19,10 @@
     {% if template_author %}
       <a class="tile-edit tile-author" href="{{ url_for('views.template_edit', template_id=t.id) }}" title="Edit template" aria-label="Edit template {{ t.title }}"><i class="fa fa-pencil"></i></a>
     {% endif %}
+    {% if template_author %}
+      <button type="submit" formaction="{{ url_for('views.template_delete', template_id=t.id) }}" class="tile-trash"
+              data-title="{{ t.title }}" title="Delete template" aria-label="Delete template {{ t.title }}"><i class="fa fa-trash"></i></button>
+    {% endif %}
     {% if t.added %}
       <button type="submit" formaction="{{ url_for('views.template_remove') }}" name="template_ids" value="{{ t.id }}" class="tile-remove" data-title="{{ t.title }}" title="Remove from my list" aria-label="Remove {{ t.title }} from my list"><i class="fa fa-minus"></i></button>
     {% else %}

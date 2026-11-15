@@ -12,12 +12,36 @@
 <div class="text-center mb-4">
   {% if sections %}<button type="button" class="btn btn-outline-secondary" id="template-select-toggle">Select</button>{% endif %}
   {% if template_author %}<a class="btn btn-outline-primary" href="{{ url_for('views.template_new') }}">+ New template</a>{% endif %}
+  {% if template_author and sections %}<button type="button" class="btn btn-outline-secondary" id="template-reorder-toggle">Reorder</button>{% endif %}
 </div>
+
+{% if template_author and sections %}
+<div id="template-reorder" class="d-none">
+  <div class="card settings-card mb-4"><div class="card-body">
+    <h2 class="h5">Category order</h2>
+    <p class="text-muted small">This order is used for everyone, not just you.</p>
+    <ul class="list-group list-group-flush reorder-list" id="template-category-order"
+        data-url="{{ url_for('views.template_category_order') }}">
+      {% for section in sections %}
+        <li class="list-group-item d-flex align-items-center px-0 reorder-row" data-id="{{ section.name }}">
+          <span class="drag-handle mr-3" role="button" tabindex="0" title="Drag to change the order"
+                aria-label="Change the order of {{ section.name }}. Use the up and down arrow keys.">
+            <i class="fa fa-bars" aria-hidden="true"></i>
+          </span>
+          <span class="flex-grow-1">{{ section.name }} <span class="badge badge-secondary ml-1">{{ section.templates|length }}</span></span>
+        </li>
+      {% endfor %}
+    </ul>
+    <small class="reorder-status form-text text-muted mt-2" aria-live="polite">Drag the handles to change the order.</small>
+  </div></div>
+</div>
+{% endif %}
 
 {% if not sections %}
   <p class="text-center text-muted">There are no templates yet.</p>
 {% else %}
 
+<div id="template-normal-view">
 <form method="POST" id="template-form" action="{{ url_for('views.template_add') }}">
   <div id="categories">
     {% for section in sections %}
@@ -47,8 +71,13 @@
     <button type="submit" class="btn btn-sm btn-success" id="template-add-selected" disabled><i class="fa fa-plus"></i> Add <span id="template-add-count"></span></button>
     <button type="submit" class="btn btn-sm btn-danger" id="template-remove-selected"
             formaction="{{ url_for('views.template_remove') }}" disabled><i class="fa fa-minus"></i> Remove <span id="template-remove-count"></span></button>
+    {% if template_author %}
+      <button type="submit" class="btn btn-sm btn-outline-danger" id="template-delete-selected"
+              formaction="{{ url_for('views.template_delete_many') }}" disabled><i class="fa fa-trash"></i> Delete <span id="template-delete-count"></span></button>
+    {% endif %}
     <button type="button" class="btn btn-sm btn-outline-light" id="template-cancel">Cancel</button>
   </div>
 </form>
+</div>
 {% endif %}
 {% endblock %}

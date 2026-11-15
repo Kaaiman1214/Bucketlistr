@@ -6,10 +6,13 @@ from os import path
 from .countries import COUNTRIES
 
 CATALOG_DIR = path.join(path.dirname(path.abspath(__file__)), 'catalog')
+CATEGORY_ORDER_FILE = path.join(CATALOG_DIR, '_categories.json')
 AUTHOR_MARKER = path.join(path.dirname(path.dirname(path.abspath(__file__))), '.template-author')
 ID_PATTERN = re.compile(r'[a-z0-9][a-z0-9-]{0,62}')
 MAX_FILE_BYTES = 100000
 MAX_CHECKLIST_ENTRIES = 200
+MAX_CATEGORY_NAME = 100
+MAX_CATEGORIES = 200
 
 _warned = set()
 
@@ -74,7 +77,7 @@ def load_catalog():
     if not path.isdir(CATALOG_DIR):
         return templates
     for name in sorted(os.listdir(CATALOG_DIR)):
-        if not name.endswith('.json'):
+        if not name.endswith('.json') or name.startswith('_'):
             continue
         file_path = path.join(CATALOG_DIR, name)
         template = None
@@ -134,3 +137,44 @@ def delete_template(template_id):
         os.remove(template_path(template_id))
     except FileNotFoundError:
         pass
+
+
+def load_category_order():
+    if not path.isfile(CATEGORY_ORDER_FILE):
+        return []
+    try:
+        with open(CATEGORY_ORDER_FILE, encoding='utf-8') as order_file:
+            data = json.load(order_file)
+        order = data.get('order') if isinstance(data, dict) else None
+        if not isinstance(order, list):
+            raise ValueError('"order" must be a list of category names.')
+        names = []
+        for name in order:
+            if not isinstance(name, str):
+                raise ValueError('Every entry in "order" must be text.')
+            name = name.strip()
+            if name and name not in names:
+                names.append(name)
+        return names
+    except (OSError, ValueError) as exc:
+        _warn_once('_categories.json', str(exc))
+        return []
+
+
+def save_category_order(names):
+    cleaned = []
+    for name in names:
+        if not isinstance(name, str):
+            continue
+        name = name.strip()
+        if name and len(name) <= MAX_CATEGORY_NAME and name not in cleaned:
+            cleaned.append(name)
+    cleaned = cleaned[:MAX_CATEGORIES]
+
+    os.makedirs(CATALOG_DIR, exist_ok=True)
+    temp = CATEGORY_ORDER_FILE + '.tmp'
+    with open(temp, 'w', encoding='utf-8', newline='\n') as order_file:
+        json.dump({'order': cleaned}, order_file, indent=2, ensure_ascii=False)
+        order_file.write('\n')
+    os.replace(temp, CATEGORY_ORDER_FILE)
+

@@ -9,7 +9,7 @@ from sqlalchemy.orm import selectinload
 
 from . import db, IMAGE_DIR, PENDING_DIR
 from .catalog import (author_mode, clean_template, delete_template, get_template, load_catalog,
-                      write_template)
+                      load_category_order, save_category_order, write_template)
 from .countries import COUNTRIES, COUNTRY_GROUPS, flag_url
 from .models import (BucketItem, Category, ChecklistEntry, Photo, User, MONTH_NAMES,
                      STATUS_CHOICES, next_category_position, ordered_categories)
@@ -484,15 +484,13 @@ def catalog_sections():
         key = fold(template['category'])
         grouped.setdefault(key, {'name': template['category'], 'templates': []})
         grouped[key]['templates'].append(entry)
-    user_order = {}
-    user_names = {}
-    for index, category in enumerate(ordered_categories()):
-        user_order[fold(category.name)] = index
-        user_names[fold(category.name)] = category.name
+    order = load_category_order()
+    order_index = {fold(name): index for index, name in enumerate(order)}
+    order_names = {fold(name): name for name in order}
     sections = []
-    for key in sorted(grouped, key=lambda key: (key not in user_order, user_order.get(key, 0), key)):
+    for key in sorted(grouped, key=lambda key: (key not in order_index, order_index.get(key, 0), key)):
         section = grouped[key]
-        section['name'] = user_names.get(key, section['name'])
+        section['name'] = order_names.get(key, section['name'])
         section['templates'].sort(key=lambda entry: fold(entry['title']))
         sections.append(section)
     used = set()
@@ -670,6 +668,43 @@ def template_delete(template_id):
         abort(404)
     delete_template(template_id)
     flash('Template deleted.', category='success')
+    return redirect(url_for('views.template_catalog'))
+
+
+@views.route('/templates/categories/order', methods=['POST'])
+@login_required
+def template_category_order():
+    require_author()
+    payload = request.get_json(silent=True) or {}
+    order = payload.get('order')
+    if not isinstance(order, list) or not all(isinstance(name, str) for name in order):
+        abort(400)
+    save_category_order(order)
+    return jsonify(ok=True)
+
+
+@views.route('/templates/delete-many', methods=['POST'])
+@login_required
+def template_delete_many():
+    require_author()
+    ids = []
+    for template_id in request.form.getlist('template_ids'):
+        if template_id not in ids:
+            ids.append(template_id)
+    if not ids:
+        flash('No templates were selected.', category='error')
+        return redirect(url_for('views.template_catalog'))
+
+    deleted = 0
+    for template_id in ids:
+        if get_template(template_id) is not None:
+            delete_template(template_id)
+            deleted += 1
+
+    if not deleted:
+        flash('None of those templates exist.', category='error')
+    else:
+        flash(f"Deleted {deleted} template{'' if deleted == 1 else 's'}.", category='success')
     return redirect(url_for('views.template_catalog'))
 
 
