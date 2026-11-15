@@ -11,5 +11,5 @@ if __name__ == '__main__':
         from waitress import serve
 
         serve(app,
-              host=os.environ.get('BUCKETLIST_HOST', '127.0.0.1'),
+              host=os.environ.get('BUCKETLIST_HOST', '0.0.0.0'),
               port=int(os.environ.get('BUCKETLIST_PORT', '5000')))
