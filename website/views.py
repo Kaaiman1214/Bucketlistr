@@ -537,8 +537,7 @@ def template_add():
         if category is None:
             category = Category(name=template['category'], position=next_category_position())
             db.session.add(category)
-        item = BucketItem(user_id=current_user.id, title=template['title'],
-                          description=template['description'] or None, category=category,
+        item = BucketItem(user_id=current_user.id, title=template['title'], category=category,
                           country_code=template['country'] or None, template_id=template_id)
         for entry in template['checklist']:
             item.checklist.append(ChecklistEntry(text=entry))
