@@ -48,6 +48,31 @@
     </div>
   </div>
 
+  <div class="card settings-card mb-4" id="backup">
+    <div class="card-body">
+      <h2 class="h5">Backup</h2>
+      <p class="text-muted small">Photos themselves live in <code>website/images</code> and aren't included in either format below &mdash; copy that folder separately.</p>
+
+      <h3 class="h6 mt-3">Download</h3>
+      <a class="btn btn-outline-secondary btn-sm" href="{{ url_for('settings.export_db') }}">Database (.db)</a>
+      <a class="btn btn-outline-secondary btn-sm" href="{{ url_for('settings.export_json_route') }}">Data (.json)</a>
+      <p class="text-muted small mt-2 mb-0">The .db file is an exact copy of everything, including your login. The .json file has your items, categories and settings in a readable format, without any login details.</p>
+
+      <h3 class="h6 mt-4">Import</h3>
+      <p class="text-muted small mb-2">
+        A <strong>.db</strong> file replaces your entire database and logs you out, so you can log back in with whatever account is in that file. Your current database is saved automatically first, just in case.<br />
+        A <strong>.json</strong> file replaces your items, categories and settings, but leaves your current login untouched.
+      </p>
+      <form method="POST" action="{{ url_for('settings.import_backup') }}" enctype="multipart/form-data"
+            onsubmit="return confirm('Import this backup? It will replace your current items (and your login, for a .db file). This cannot be undone.');">
+        <div class="form-group">
+          <input type="file" class="form-control-file" name="backup_file" accept=".db,.json" required />
+        </div>
+        <button type="submit" class="btn btn-outline-danger">Import backup</button>
+      </form>
+    </div>
+  </div>
+
   <div class="card settings-card mb-4" id="password">
     <div class="card-body">
       <h2 class="h5">Password</h2>

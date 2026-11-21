@@ -491,7 +491,10 @@ def catalog_sections():
     for key in sorted(grouped, key=lambda key: (key not in order_index, order_index.get(key, 0), key)):
         section = grouped[key]
         section['name'] = order_names.get(key, section['name'])
-        section['templates'].sort(key=lambda entry: fold(entry['title']))
+        section['templates'].sort(key=lambda entry: (
+            entry['country'] == '',
+            fold(COUNTRIES.get(entry['country'], '')),
+            fold(entry['title'])))
         sections.append(section)
     used = set()
     for section in sections:
